@@ -17,7 +17,7 @@ class DeleteAccount extends Component {
             },
             body: JSON.stringify({'idx': this.props.idxOfAccount})
             });
-            const accounts = await rawResponse.json();
+            await rawResponse.json();
 
             this.props.onDelete()
         })();

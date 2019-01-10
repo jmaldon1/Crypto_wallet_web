@@ -143,18 +143,20 @@ class Accounts extends Component {
                             <div key={accounts.id} className="tab-pane fade show active" id={"v-pills-" + accounts.id} role="tabpanel" aria-labelledby={"v-pills-" + accounts.id + "-tab"}>
                                 <nav>
                                   <div className="nav nav-tabs" id="nav-tab" role="tablist">
-                                    <a className="nav-item nav-link active" id={"nav-send-tab-id-" + accounts.id} data-toggle="tab" href={"#nav-send-id-" + accounts.id} role="tab" aria-controls={"#nav-send-id-" + accounts.id} aria-selected="true">Send</a>
-                                    <a className="nav-item nav-link" id={"nav-receive-tab-id-" + accounts.id} data-toggle="tab" href={"#nav-receive-id-" + accounts.id} role="tab" aria-controls={"#nav-receive-id-" + accounts.id} aria-selected="false">Receive</a>
+                                    <a className="nav-item nav-link active" id={"nav-send-tab-id-" + accounts.id} data-toggle="tab" href={"#nav-send-id-" + accounts.id} role="tab" aria-controls={"#nav-send-id-" + accounts.id} aria-selected="true"><i className="fa fa-arrow-circle-up" aria-hidden="true"></i>
+                                    Send</a>
+                                    <a className="nav-item nav-link" id={"nav-receive-tab-id-" + accounts.id} data-toggle="tab" href={"#nav-receive-id-" + accounts.id} role="tab" aria-controls={"#nav-receive-id-" + accounts.id} aria-selected="false"><i className="fa fa-arrow-circle-down" aria-hidden="true"></i>
+                                    Receive</a>
                                     <a className="nav-item nav-link" id={"nav-settings-tab-id-" + accounts.id} data-toggle="tab" href={"#nav-settings-id-" + accounts.id} role="tab" aria-controls={"#nav-settings-id-" + accounts.id} aria-selected="false"><i className="fa fa-cog" aria-hidden="true"></i>
                                     Settings</a>
                                   </div>
                                 </nav>
                                 <div className="tab-content" id="nav-tabContent">
                                     <div className="tab-pane fade show active" id={"nav-send-id-" + accounts.id} role="tabpanel" aria-labelledby={"nav-send-tab-id-" + accounts.id}>
-                                        <SendTx />
+                                        <SendTx accountData={this.state.curAccountData} />
                                     </div>
                                     <div className="tab-pane fade" id={"nav-receive-id-" + accounts.id} role="tabpanel" aria-labelledby={"nav-receive-tab-id-" + accounts.id}>
-                                        <ReceiveTx accountData={this.state.curAccountData}/>
+                                        <ReceiveTx accountData={this.state.curAccountData} />
                                     </div>
                                     <div className="tab-pane fade" id={"nav-settings-id-" + accounts.id} role="tabpanel" aria-labelledby={"nav-settings-tab-id-" + accounts.id}>
                                         <DefaultAccount onDefault={this.updateAccounts} idxOfAccount={accounts.id}/>
@@ -166,15 +168,17 @@ class Accounts extends Component {
                             <div key={accounts.id} className="tab-pane fade" id={"v-pills-" + accounts.id} role="tabpanel" aria-labelledby={"v-pills-" + accounts.id + "-tab"}>
                                 <nav>
                                   <div className="nav nav-tabs" id="nav-tab" role="tablist">
-                                    <a className="nav-item nav-link active" id={"nav-send-tab-id-" + accounts.id} data-toggle="tab" href={"#nav-send-id-" + accounts.id} role="tab" aria-controls={"#nav-send-id-" + accounts.id} aria-selected="true">Send</a>
-                                    <a className="nav-item nav-link" id={"nav-receive-tab-id-" + accounts.id} data-toggle="tab" href={"#nav-receive-id-" + accounts.id} role="tab" aria-controls={"#nav-receive-id-" + accounts.id} aria-selected="false">Receive</a>
+                                    <a className="nav-item nav-link active" id={"nav-send-tab-id-" + accounts.id} data-toggle="tab" href={"#nav-send-id-" + accounts.id} role="tab" aria-controls={"#nav-send-id-" + accounts.id} aria-selected="true"><i className="fa fa-arrow-circle-up" aria-hidden="true"></i>
+                                    Send</a>
+                                    <a className="nav-item nav-link" id={"nav-receive-tab-id-" + accounts.id} data-toggle="tab" href={"#nav-receive-id-" + accounts.id} role="tab" aria-controls={"#nav-receive-id-" + accounts.id} aria-selected="false"><i className="fa fa-arrow-circle-down" aria-hidden="true"></i>
+                                    Receive</a>
                                     <a className="nav-item nav-link" id={"nav-settings-tab-id-" + accounts.id} data-toggle="tab" href={"#nav-settings-id-" + accounts.id} role="tab" aria-controls={"#nav-settings-id-" + accounts.id} aria-selected="false"><i className="fa fa-cog" aria-hidden="true"></i>
                                     Settings</a>
                                   </div>
                                 </nav>
                                 <div className="tab-content" id="nav-tabContent">
                                     <div className="tab-pane fade show active" id={"nav-send-id-" + accounts.id} role="tabpanel" aria-labelledby={"nav-send-tab-id-" + accounts.id}>
-                                        <SendTx />
+                                        <SendTx accountData={this.state.curAccountData} />
                                     </div>
                                     <div className="tab-pane fade" id={"nav-receive-id-" + accounts.id} role="tabpanel" aria-labelledby={"nav-receive-tab-id-" + accounts.id}>
                                         <ReceiveTx accountData={this.state.curAccountData} />

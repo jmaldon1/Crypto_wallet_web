@@ -8,60 +8,62 @@ const testnet = bitcoin.networks.testnet
 
 // var accountArray = [];
 var accountArray = [
+    {
+        "addresses": [
+            {
+                "keypath": "m/44h/0h/0h/0/0",
+                "address": "mx97R1ymecapsDH8t7jVNH9henf8vxzuGD",
+                "numOfTx": 0,
+                "balance" : 0,
+                "change": [],
+                "txs": [],
+                "used": false,
+                "id": 0
+            },
+            // {
+            //     "keypath": "m/44h/0h/0h/1/0",
+            //     "address": "2NAZ2GVgh1BQvQQeC5GwoKj4v4bk4K2wqgR",
+            //     "used": false
+            // }
+            {
+                "keypath": "m/44h/0h/0h/2/0",
+                "address": "moHSnM84HuhTRv1kzhz8LJmzEMV18rBHeR",
+                "numOfTx": 0,
+                "balance" : 0,
+                "change": [],
+                "txs": [],
+                "used": false,
+                "id": 2
+            }
+        ],
+        "id": 1,
+        "name": "Account #1",
+        "defaultAccount": true
+    }
     // {
     //     "addresses": [
     //         {
-    //             "keypath": "m/44h/0h/0h/0/0",
-    //             "address": "mx97R1ymecapsDH8t7jVNH9henf8vxzuGD",
-    //             "numOfTx": 0,
-    //             "balance" : 0,
-    //             "change": [],
-    //             "txs": [],
+    //             "keypath": "m/44h/0h/1h/0/0",
+    //             "address": "2NAZ2GVgh1BQvQQeC5GwoKj4v4bk4K2wqgR",
     //             "used": false
     //         }
-    //         // {
-    //         //     "keypath": "m/44h/0h/0h/1/0",
-    //         //     "address": "2NAZ2GVgh1BQvQQeC5GwoKj4v4bk4K2wqgR",
-    //         //     "used": false
-    //         // }
-    //         // {
-    //         //     "keypath": "m/44h/0h/0h/2/0",
-    //         //     "address": "moHSnM84HuhTRv1kzhz8LJmzEMV18rBHeR",
-    //         //     "numOfTx": 0,
-    //         //     "balance" : 0,
-    //         //     "change": [],
-    //         //     "txs": [],
-    //         //     "used": false
-    //         // }
     //     ],
-    //     "id": 1,
-    //     "name": "Account #1",
-    //     "defaultAccount": true
+    //     "id": 2,
+    //     "name": "Account #2",
+    //     "defaultAccount": false
+    // },
+    // {
+    //     "addresses": [
+    //         {
+    //             "keypath": "m/44h/0h/2h/0/0",
+    //             "address": "mx97R1ymecapsDH8t7jVNH9henf8vxzuGD",
+    //             "used": false
+    //         }
+    //     ],
+    //     "id": 3,
+    //     "name": "Account #3",
+    //     "defaultAccount": false
     // }
-    // // {
-    // //     "addresses": [
-    // //         {
-    // //             "keypath": "m/44h/0h/1h/0/0",
-    // //             "address": "2NAZ2GVgh1BQvQQeC5GwoKj4v4bk4K2wqgR",
-    // //             "used": false
-    // //         }
-    // //     ],
-    // //     "id": 2,
-    // //     "name": "Account #2",
-    // //     "defaultAccount": false
-    // // },
-    // // {
-    // //     "addresses": [
-    // //         {
-    // //             "keypath": "m/44h/0h/2h/0/0",
-    // //             "address": "mx97R1ymecapsDH8t7jVNH9henf8vxzuGD",
-    // //             "used": false
-    // //         }
-    // //     ],
-    // //     "id": 3,
-    // //     "name": "Account #3",
-    // //     "defaultAccount": false
-    // // }
 ]
 
 router.get('/accounts', async (req, res) => {
@@ -89,6 +91,7 @@ router.post("/addAccount", async (req, res) => {
 	tempAddressDict['numOfTx'] = 0;
 	tempAddressDict['change'] = []
 	tempAddressDict['txs'] = []
+	tempAddressDict['id'] = accountIdx-1
 	
 	/* TALK TO FPGA */
 	const keyPair = bitcoin.ECPair.makeRandom({ network: testnet })
@@ -148,7 +151,6 @@ router.post('/defaultAccount', async (req, res) => {
 
 router.post('/createAddress', async (req, res) => {
 	// GET IDX OF CURRENT ACCOUNT FROM POST REQUEST
-	// temp_idx = 1;
 	var accountData = accountArray.filter(function(account) {
 	    return account['id'] === req.body.idx;
 	})[0];
@@ -189,7 +191,6 @@ router.post('/createAddress', async (req, res) => {
 router.post('/checkBalance', async (req, res) => {
 	// if (!req.body.addresses) throw "Must Provide Addresses"
 	// GET IDX OF CURRENT ACCOUNT FROM POST REQUEST
-	// var temp_idx = 1
 	var addressArr = []
 	var tempTxDict = {}
 	var accountData = accountArray.filter(function(account) {
@@ -203,7 +204,6 @@ router.post('/checkBalance', async (req, res) => {
 	var queryParameters = {  active: addressArr.join('|') };
 	var response = await request({url: requestURL, qs: queryParameters, timeout: 5000})
 	response = JSON.parse(response)
-	// console.log(JSON.stringify(response, null, 4))
 
 	response.addresses.forEach(e => {
 		/* find the balance, number of tx's, and sets 'used' to true if the address has transactions */
@@ -215,7 +215,7 @@ router.post('/checkBalance', async (req, res) => {
 			if (index !== -1) addressArr.splice(index, 1);
 			return;
 		}
-		addrData.balance = e.final_balance;
+		addrData.balance = e.final_balance/100000000;
 		addrData.numOfTx = e.n_tx
 		addrData.used = true
 		/* find every transaction for each address */
