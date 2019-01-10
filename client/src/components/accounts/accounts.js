@@ -3,6 +3,7 @@ import AddAccount from './addAccount.js'
 import DeleteAccount from './deleteAccount.js'
 import DefaultAccount from './defaultAccount.js'
 import SendTx from '../transactions/send.js'
+import ReceiveTx from '../transactions/receive.js'
 // import './App.css';
 
 class Accounts extends Component {
@@ -10,7 +11,8 @@ class Accounts extends Component {
         super(props);
         this.state = {
           accounts: [],
-          nextAccount: 0
+          nextAccount: 0,
+          curAccountData: {}
         }
         this.updateAccounts = this.updateAccounts.bind(this);
     }
@@ -19,8 +21,13 @@ class Accounts extends Component {
     componentDidMount(){
         fetch('http://localhost:5000/wallet/accounts')
         .then(res => res.json())
-        .then(results => this.setState({accounts: results.accounts, nextAccount: results.nextAccount}, () => console.log('Results: ', results)));
-    }
+        .then(results => {
+            this.setState({accounts: results.accounts, nextAccount: results.nextAccount}, () => console.log('Results: ', results))
+            var accountId = results.accounts[results.accounts.length-1].id
+            // this.getAccountData(accountId)
+            this.getBalances(accountId)
+        });
+    };
 
     /* Get data from addAccount child component */
     handleName = (name) => {
@@ -35,12 +42,14 @@ class Accounts extends Component {
             body: JSON.stringify({'name': name})
             });
             const results = await rawResponse.json();
-            // console.log(results)
-            this.setState({accounts: results.accounts})
-            this.setState({nextAccount: results.nextAccount})
+
+            this.setState({accounts: results.accounts, nextAccount: results.nextAccount})
+
+            var accountId = results.accounts[results.accounts.length-1].id
+             /* get account data of newly added account */
+            this.getAccountData(accountId)
 
             /* Make newly added account tab active */
-            var accountId = results.accounts[results.accounts.length-1].id
             var newAccountTab = document.getElementById("v-pills-" + accountId + "-tab");
             newAccountTab.classList.add("active");
             var newAccountContent = document.getElementById("v-pills-" + accountId);
@@ -55,24 +64,72 @@ class Accounts extends Component {
 
     }
 
+    onClick = (account) => {
+        // this.getAccountData(account.id); 
+        this.getBalances(account.id)
+    }
+
+    getAccountData = (id) => {
+        var accountData = this.state.accounts.filter(account => {
+            return account['id'] === id;
+        })[0];
+        this.setState({curAccountData: accountData})
+        return this.state.curAccountData
+    }
+
+    getBalances = (id) => {
+         (async () => {
+            const rawResponse = await fetch('http://localhost:5000/wallet/checkBalance', {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({'idx': id})
+            });
+            const results = await rawResponse.json();
+            /* if there are no unused addresses, create one */
+            if(results.addresses.filter(account => account['used'] === false).length === 0){
+                this.getNewAddress(id)
+            }else{
+                this.setState({curAccountData: results})
+            }
+        })();
+    }
+
+    /* creates a new address that is meant to receive coins */
+    getNewAddress = (id) => {
+        (async () => {
+            const rawResponse = await fetch('http://localhost:5000/wallet/createAddress', {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({'idx': id})
+            });
+            const results = await rawResponse.json();
+            this.setState({curAccountData: results})
+        })();
+    }
+
     /* make a get request to API that retrieves all current Accounts */
-    updateAccounts(e){
+    updateAccounts(){
         fetch('http://localhost:5000/wallet/accounts')
         .then(res => res.json())
         .then(results => this.setState({accounts: results.accounts, nextAccount: results.nextAccount}));
     }
 
   render() {
-    // console.log(this.state.nextAccount)
     return (
         <div className="row">
             <div className="col-sm-2">
                 <div className="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
                     {this.state.accounts.map(accounts =>
                         accounts.defaultAccount === true ? (
-                            <a key={accounts.id} className="nav-link active" id={"v-pills-" + accounts.id + "-tab"} data-toggle="pill" href={"#v-pills-" + accounts.id} role="tab" aria-controls={"v-pills-" + accounts.id} aria-selected="true">{accounts.name}</a>
+                            <a key={accounts.id} onClick={() => { this.onClick(accounts) }} className="nav-link active" id={"v-pills-" + accounts.id + "-tab"} data-toggle="pill" href={"#v-pills-" + accounts.id} role="tab" aria-controls={"v-pills-" + accounts.id} aria-selected="true">{accounts.name}</a>
                         ) : (
-                            <a key={accounts.id} className="nav-link" id={"v-pills-" + accounts.id + "-tab"} data-toggle="pill" href={"#v-pills-" + accounts.id} role="tab" aria-controls={"v-pills-" + accounts.id} aria-selected="false">{accounts.name}</a>
+                            <a key={accounts.id} onClick={() => { this.onClick(accounts) }} className="nav-link" id={"v-pills-" + accounts.id + "-tab"} data-toggle="pill" href={"#v-pills-" + accounts.id} role="tab" aria-controls={"v-pills-" + accounts.id} aria-selected="false">{accounts.name}</a>
                         )
                 )}
                 <a className="nav-link" id="v-pills-addAccount-tab" data-toggle="pill" href="#v-pills-addAccount" role="tab" aria-controls="v-pills-addAccount" aria-selected="false"><i className="fa fa-plus" aria-hidden="true"></i>
@@ -96,7 +153,9 @@ class Accounts extends Component {
                                     <div className="tab-pane fade show active" id={"nav-send-id-" + accounts.id} role="tabpanel" aria-labelledby={"nav-send-tab-id-" + accounts.id}>
                                         <SendTx />
                                     </div>
-                                    <div className="tab-pane fade" id={"nav-receive-id-" + accounts.id} role="tabpanel" aria-labelledby={"nav-receive-tab-id-" + accounts.id}>...</div>
+                                    <div className="tab-pane fade" id={"nav-receive-id-" + accounts.id} role="tabpanel" aria-labelledby={"nav-receive-tab-id-" + accounts.id}>
+                                        <ReceiveTx accountData={this.state.curAccountData}/>
+                                    </div>
                                     <div className="tab-pane fade" id={"nav-settings-id-" + accounts.id} role="tabpanel" aria-labelledby={"nav-settings-tab-id-" + accounts.id}>
                                         <DefaultAccount onDefault={this.updateAccounts} idxOfAccount={accounts.id}/>
                                         <DeleteAccount onDelete={this.updateAccounts} idxOfAccount={accounts.id}/>
@@ -117,7 +176,9 @@ class Accounts extends Component {
                                     <div className="tab-pane fade show active" id={"nav-send-id-" + accounts.id} role="tabpanel" aria-labelledby={"nav-send-tab-id-" + accounts.id}>
                                         <SendTx />
                                     </div>
-                                    <div className="tab-pane fade" id={"nav-receive-id-" + accounts.id} role="tabpanel" aria-labelledby={"nav-receive-tab-id-" + accounts.id}>test</div>
+                                    <div className="tab-pane fade" id={"nav-receive-id-" + accounts.id} role="tabpanel" aria-labelledby={"nav-receive-tab-id-" + accounts.id}>
+                                        <ReceiveTx accountData={this.state.curAccountData} />
+                                    </div>
                                     <div className="tab-pane fade" id={"nav-settings-id-" + accounts.id} role="tabpanel" aria-labelledby={"nav-settings-tab-id-" + accounts.id}>
                                         <DefaultAccount onDefault={this.updateAccounts} idxOfAccount={accounts.id}/>
                                         <DeleteAccount onDelete={this.updateAccounts} idxOfAccount={accounts.id}/>

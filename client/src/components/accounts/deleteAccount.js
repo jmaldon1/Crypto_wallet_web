@@ -19,7 +19,7 @@ class DeleteAccount extends Component {
             });
             const accounts = await rawResponse.json();
 
-            this.props.onDelete(accounts)
+            this.props.onDelete()
         })();
     }
 

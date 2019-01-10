@@ -33,7 +33,7 @@ class DefaultAccount extends Component {
             const accounts = await rawResponse.json();
             this.notify()
 
-            this.props.onDefault(accounts)
+            this.props.onDefault()
         })();
     }
 
