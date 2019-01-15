@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "bitcoinjs-lib": "^4.0.2",
     "react": "^16.7.0",
     "react-copy-to-clipboard": "^5.0.1",
     "react-dom": "^16.7.0",

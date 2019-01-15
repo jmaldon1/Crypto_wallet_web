@@ -15,7 +15,7 @@ class ReceiveTx extends Component {
 
     componentWillReceiveProps(nextProps) {
         this.setState({ curAccount: nextProps.accountData });
-        const unusedAddress = nextProps.accountData['addresses'].filter(account => account['used'] === false);
+        const unusedAddress = nextProps.accountData.addresses.filter(account => account.used === false && account.change === false);
         this.setState({value: unusedAddress[0].address})
         /* must set to false every time or else it will break */
         this.setState({copied: false})
@@ -34,16 +34,17 @@ class ReceiveTx extends Component {
 
     render() {
         return (
-             <div>
-                <figure className="highlight">
-                    <pre>
-                        {this.state.value}
-                    </pre>
+             <div className="row">
+                <div className="input-group mb-3">
+                    <div className="input-group-prepend">
+                        <span className="input-group-text" id="basic-addon3">Address</span>
+                    </div>
+                    <input type="text" name="address" style={{width: '350px'}} aria-describedby="basic-addon3" value={this.state.value} readOnly />
                     <CopyToClipboard text={this.state.value}
                         onCopy={() => this.setState({copied: true})}>
                         <button type="button" className="btn btn-primary btn-sm">Copy</button>
                     </CopyToClipboard>
-                </figure>
+                </div>
 
                 {this.state.copied ? this.notify()  : null}
             </div>

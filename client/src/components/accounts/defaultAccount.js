@@ -22,18 +22,22 @@ class DefaultAccount extends Component {
 
     defaultAccount(e) {
         (async () => {
-            const rawResponse = await fetch('http://localhost:5000/wallet/defaultAccount', {
-            method: 'POST',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({'idx': this.props.idxOfAccount})
-            });
-            await rawResponse.json();
-            this.notify()
+            try{
+                const rawResponse = await fetch('http://localhost:5000/wallet/defaultAccount', {
+                method: 'POST',
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({'idx': this.props.idxOfAccount})
+                });
+                await rawResponse.json();
+                this.notify()
 
-            this.props.onDefault()
+                this.props.onDefault()
+            }catch (e){
+                console.log('status ' + e.status + ': ' + await e.json())
+            }
         })();
     }
 

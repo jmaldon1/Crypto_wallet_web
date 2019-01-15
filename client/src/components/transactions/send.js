@@ -1,31 +1,36 @@
 import React, { Component } from 'react';
+import SendForm from './sendForm.js'
 
 class SendTx extends Component {
     constructor(props) {
         super(props);
         this.state = {
+            curAccountData: {},
             addresses: [],
-            sendAddress: '',
-            amount: 0
+            fee: 1000,
+            maxSpendableBalance: 0,
         }
-        
-        this.handleAddrChange = this.handleAddrChange.bind(this);
-        this.handleAmountChange = this.handleAmountChange.bind(this);
     }
 
     componentWillReceiveProps(nextProps) {
-        const unusedAddress = nextProps.accountData.addresses.filter(account => account.used === true && account.balance !== 0);
+        this.setState({curAccountData: nextProps.accountData})
+        const unusedAddress = nextProps.accountData.addresses.filter(account => account.used === true && account.balance);
         this.setState({addresses: unusedAddress})
     }
 
-    handleAddrChange(event) {
-        /* constantly adds input values to state (good for validation of input) */
-        this.setState({sendAddress: event.target.value});
+    sendTx = (address, addressData, amount, fee, id) => {
+       this.props.onSendTx(address, addressData, amount, fee, id)
     }
 
-    handleAmountChange(event) {
-        /* constantly adds input values to state (good for validation of input) */
-        this.setState({amount: event.target.value});
+
+    getMaxSpendableBalance = (addressData) => {
+        var amountWeHave = addressData.balance*100000000 //convert to satoshi
+        var transactionFee = this.state.fee 
+
+        var maxSpendableBalance = (amountWeHave - transactionFee)/100000000 //convert to btc
+
+        this.setState({maxSpendableBalance: maxSpendableBalance})
+        return maxSpendableBalance
     }
 
     render() {
@@ -35,35 +40,14 @@ class SendTx extends Component {
                     <div className="col-5">
                         <div className="list-group" id="list-tab" role="tablist">
                         {this.state.addresses.map(address => 
-                            <a key={address.id} className="list-group-item list-group-item-action" id={"list-" + address.id + "-list" } data-toggle="list" href={"#list-" + address.id} role="tab" aria-controls={address.id} >{address.address}</a>
+                            <a key={address.id} onClick={() => this.getMaxSpendableBalance(address)} className="list-group-item list-group-item-action" id={"list-" + address.id + "-list" } data-toggle="list" href={"#list-" + address.id} role="tab" style={{"textAlign": "center"}} aria-controls={address.id} >{address.address} <br/><span>{address.balance} ₿ (BTC)</span></a>
                         )}
                         </div>
                     </div>
                     <div className="col-5">
                         <div className="tab-content" id="nav-tabContent">
                         {this.state.addresses.map(address => 
-                            <div key={address.id} className="tab-pane fade" id={"list-" + address.id} role="tabpanel" aria-labelledby={"list-" + address.id + "-list" }>
-                                <span>
-                                    Balance: {address.balance}
-                                </span>
-                                {/*<label htmlFor="basic-url">Your vanity URL</label>*/}
-                                <div className="input-group mb-3">
-                                  <div className="input-group-prepend">
-                                    <span className="input-group-text" id="basic-addon3">Address</span>
-                                  </div>
-                                  <input type="text" className="form-control" id="basic-url" aria-describedby="basic-addon3" value={this.state.value} onChange={this.handleChange} />
-                                </div>
-
-                                <div className="input-group mb-3">
-                                  <div className="input-group-prepend">
-                                    <span className="input-group-text">Amount</span>
-                                  </div>
-                                  <input type="text" className="form-control" aria-label="Amount (to the nearest dollar)" value={this.state.value} onChange={this.handleChange}/>
-                                  <div className="input-group-append">
-                                    <span className="input-group-text">₿ (BTC)</span>
-                                  </div>
-                                </div>
-                            </div>
+                            <SendForm key={address.id} addressData={address} accountData={this.state.curAccountData} onSendTx={this.sendTx} maxSpendableBalance={this.state.maxSpendableBalance} />
                         )}
                         </div>
                     </div>
