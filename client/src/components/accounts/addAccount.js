@@ -25,13 +25,17 @@ class AddAccount extends Component {
 
     render() {
         return (
-          <form onSubmit={this.handleSubmit}>
-            <label>
-              Account Name:
-              <input type="text" placeholder={'Account #' + this.props.nextAccountFromParent} value={this.state.value} onChange={this.handleChange} />
-            </label>
-            <input type="submit" value="Submit" />
-          </form>
+            <div className="col-5">
+                <form onSubmit={this.handleSubmit}>
+                    <label htmlFor="add-account">Account Name</label>
+                    <div className="input-group mb-3">
+                      <input type="text" id="add-account" className="form-control" placeholder={'Account #' + this.props.nextAccountFromParent} value={this.state.value} onChange={this.handleChange} aria-label="Create account name" aria-describedby="basic-addon2" />
+                      <div className="input-group-append">
+                        <button className="btn btn-outline-secondary" type="submit">Create</button>
+                      </div>
+                    </div>
+                 </form>
+          </div>
         );
     }
 }

@@ -14,12 +14,31 @@ class ReceiveTx extends Component {
     }
 
     componentWillReceiveProps(nextProps) {
-        this.setState({ curAccount: nextProps.accountData });
+        // this.setState({ curAccount: nextProps.accountData });
         const unusedAddress = nextProps.accountData.addresses.filter(account => account.used === false && account.change === false);
-        this.setState({value: unusedAddress[0].address})
+        this.setState({value: unusedAddress[0].address, curAccount: nextProps.accountData, copied: false});
         /* must set to false every time or else it will break */
-        this.setState({copied: false})
+        // this.setState({copied: false})
     }
+
+    // static getDerivedStateFromProps(nextProps, prevState){
+    //     if(Object.keys(nextProps.accountData).length !== 0 && nextProps.accountData.constructor === Object){
+    //         const unusedAddress = nextProps.accountData.addresses.filter(account => account.used === false && account.change === false);
+    //         return{
+    //             curAccount: nextProps.accountData, 
+    //             value: unusedAddress[0].address,
+    //             copied: false
+    //         }
+    //     }
+    //     return {
+    //         curAccount: {},
+    //         value: '',
+    //         copied: false
+    //     }
+    //     // return null;
+    //     // /* must set to false every time or else it will break */
+    //     // this.setState({copied: false})
+    // }
 
     notify = () => {
         toast.info('Copied', {

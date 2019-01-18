@@ -150,7 +150,6 @@ class SendForm extends Component {
                 <span>
                     Balance: {this.state.curAddressData.balance} ₿ (BTC)
                 </span>
-                {/*<label htmlFor="basic-url">Your vanity URL</label>*/}
                 <form onSubmit={(e) => this.handleSubmit(e, this.state.curAddressData)}>
                     <div className="input-group mb-3">
                         <div className="input-group-prepend">

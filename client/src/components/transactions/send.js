@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import SendForm from './sendForm.js'
+import '../../App.css';
 
 class SendTx extends Component {
     constructor(props) {
@@ -13,16 +14,16 @@ class SendTx extends Component {
     }
 
     componentWillReceiveProps(nextProps) {
-        this.setState({curAccountData: nextProps.accountData})
         const unusedAddress = nextProps.accountData.addresses.filter(account => account.used === true && account.balance);
-        this.setState({addresses: unusedAddress})
+        this.setState({curAccountData: nextProps.accountData, addresses: unusedAddress})
     }
 
+    /* pass data along to parent */
     sendTx = (address, addressData, amount, fee, id) => {
        this.props.onSendTx(address, addressData, amount, fee, id)
     }
 
-
+    /* calculate max spendable balance to display to the user */
     getMaxSpendableBalance = (addressData) => {
         var amountWeHave = addressData.balance*100000000 //convert to satoshi
         var transactionFee = this.state.fee 
@@ -40,14 +41,28 @@ class SendTx extends Component {
                     <div className="col-5">
                         <div className="list-group" id="list-tab" role="tablist">
                         {this.state.addresses.map(address => 
-                            <a key={address.id} onClick={() => this.getMaxSpendableBalance(address)} className="list-group-item list-group-item-action" id={"list-" + address.id + "-list" } data-toggle="list" href={"#list-" + address.id} role="tab" style={{"textAlign": "center"}} aria-controls={address.id} >{address.address} <br/><span>{address.balance} ₿ (BTC)</span></a>
+                            <a  key={address.id} 
+                                onClick={() => this.getMaxSpendableBalance(address)} 
+                                className="list-group-item list-group-item-action wrap" 
+                                id={"list-" + address.id + "-list" } 
+                                data-toggle="list" 
+                                href={"#list-" + address.id} 
+                                role="tab" 
+                                style={{"textAlign": "center"}} 
+                                aria-controls={address.id}>
+                                    {address.address} <br/> <span className="bold">{address.balance} ₿ (BTC)</span>
+                            </a>
                         )}
                         </div>
                     </div>
                     <div className="col-5">
                         <div className="tab-content" id="nav-tabContent">
                         {this.state.addresses.map(address => 
-                            <SendForm key={address.id} addressData={address} accountData={this.state.curAccountData} onSendTx={this.sendTx} maxSpendableBalance={this.state.maxSpendableBalance} />
+                            <SendForm   key={address.id} 
+                                        addressData={address} 
+                                        accountData={this.state.curAccountData} 
+                                        onSendTx={this.sendTx} 
+                                        maxSpendableBalance={this.state.maxSpendableBalance} />
                         )}
                         </div>
                     </div>

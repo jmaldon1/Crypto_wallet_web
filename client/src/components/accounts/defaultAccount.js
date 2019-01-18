@@ -7,38 +7,55 @@ class DefaultAccount extends Component {
         super(props);
         
         this.defaultAccount = this.defaultAccount.bind(this);
+        this.status = {};
     }
 
-    notify = () => {
-        toast.info('Default Account Set', {
-            position: "top-right",
-            autoClose: 4000,
-            hideProgressBar: true,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true
-        });
+    notify = (status) => {
+        if(status.type === 'success'){
+            toast.info(status.msg, {
+                position: "top-right",
+                autoClose: 4000,
+                hideProgressBar: true,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true
+            });
+        }else if(status.type === 'error'){
+            toast.error(status.msg, {
+                position: "top-right",
+                autoClose: 4000,
+                hideProgressBar: true,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true
+            });
+        }
     };
 
-    defaultAccount(e) {
-        (async () => {
-            try{
-                const rawResponse = await fetch('http://localhost:5000/wallet/defaultAccount', {
-                method: 'POST',
-                headers: {
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({'idx': this.props.idxOfAccount})
-                });
-                await rawResponse.json();
-                this.notify()
-
-                this.props.onDefault()
-            }catch (e){
-                console.log('status ' + e.status + ': ' + await e.json())
-            }
-        })();
+    async defaultAccount(e) {
+        try{
+            const rawResponse = await fetch('http://localhost:5000/wallet/defaultAccount', {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({'idx': this.props.idxOfAccount})
+            });
+            if (rawResponse.status !== 200) throw await rawResponse
+            await rawResponse.json();
+            this.status['type'] = 'success'
+            this.status['msg'] = 'Default account set!'
+            this.notify(this.status)
+            this.props.onDefault()
+            
+        }catch (error){
+            console.log(error)
+            this.status['type'] = 'error'
+            this.status['msg'] = await error.json()
+            this.notify(this.status)
+            // console.log('status ' + e.status + ': ' + await e.json())
+        }
     }
 
     render() {
