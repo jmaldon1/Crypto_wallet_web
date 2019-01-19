@@ -6,7 +6,6 @@ class DeleteAccount extends Component {
     constructor(props) {
         super(props);
 
-        this.deleteAccount = this.deleteAccount.bind(this);
         this.status = {};
     }
 
@@ -32,7 +31,7 @@ class DeleteAccount extends Component {
         }
     };
 
-    async deleteAccount(e) {
+    deleteAccount = async (e) => {
         try{
             const rawResponse = await fetch('http://localhost:5000/wallet/deleteAccount', {
             method: 'POST',

@@ -22,6 +22,7 @@ var accountArray = [
                 "utxs": [],
                 "used": false,
                 "change": false,
+                "unconfirmedTxs": 0,
                 "id": 0
             },
             {
@@ -32,6 +33,7 @@ var accountArray = [
                 "utxs": [],
                 "used": false,
                 "change": false,
+                "unconfirmedTxs": 0,
                 "id": 1
             },
             {
@@ -42,6 +44,7 @@ var accountArray = [
                 "utxs": [],
                 "used": false,
                 "change": false,
+                "unconfirmedTxs": 0,
                 "id": 2
             },
             {
@@ -52,6 +55,7 @@ var accountArray = [
                 "utxs": [],
                 "used": false,
                 "change": true,
+                "unconfirmedTxs": 0,
                 "id": 3
             }
         ],
@@ -126,6 +130,7 @@ router.post("/addAccount", async (req, res) => {
 		tempAddressDict['utxs'] = []
 		tempAddressDict['id'] = 0
 		tempAddressDict['change'] = false
+		tempAccountDict['unconfirmedTxs'] = 0
 		
 		/* TALK TO FPGA */
 		const keyPair = bitcoin.ECPair.makeRandom({ network: testnet })
@@ -336,13 +341,27 @@ router.post('/checkBalance', async (req, res) => {
 			var addrData = accountData.addresses.filter(function(account) {
 				    return account.address === e;
 				})[0]
+			addrData.unconfirmedTxs = 0
 			/* look through every UTXO that was returned in the response */
-			response.unspent_outputs.forEach(utxo => {
-				/* look through each of the tx's in each address we have stores */
-				addrData.utxs.forEach(tx => {
+			response.unspent_outputs.forEach(utxoFromResponse => {
+				/* look through each of the tx's in each address we have stored */
+				addrData.utxs.forEach(utxoFromDb => {
 					/* if the tx index's match then we add the tx hash to each tx */
-					if(utxo.tx_index === tx.txIndex){
-						tx['txHash'] = utxo.tx_hash_big_endian
+					if(utxoFromResponse.tx_index === utxoFromDb.txIndex){
+						utxoFromDb['txHash'] = utxoFromResponse.tx_hash_big_endian
+						utxoFromDb['confirmations'] = utxoFromResponse.confirmations
+						/* if there is an unconfirmed transaction (anything less than 3 confirmations),
+							we will remove that UTXO from the list and add 1 to the unconfirmedTX counter  */
+						if(utxoFromDb.confirmations < 3){
+							var indexOfUnconfirmedTx = addrData.utxs.findIndex(x => x.txIndex === utxoFromDb.txIndex)
+							/* just a check to make sure the index was found */
+							if (indexOfUnconfirmedTx > -1) {
+							 	addrData.utxs.splice(indexOfUnconfirmedTx, 1);
+							 	addrData.unconfirmedTxs += 1
+							}else{
+								throw 'Index of unconfirmed transaction not found'
+							}
+						}
 					}
 				})
 			});

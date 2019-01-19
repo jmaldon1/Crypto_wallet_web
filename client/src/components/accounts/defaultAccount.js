@@ -6,7 +6,6 @@ class DefaultAccount extends Component {
     constructor(props) {
         super(props);
         
-        this.defaultAccount = this.defaultAccount.bind(this);
         this.status = {};
     }
 
@@ -32,7 +31,7 @@ class DefaultAccount extends Component {
         }
     };
 
-    async defaultAccount(e) {
+    defaultAccount = async (e) => {
         try{
             const rawResponse = await fetch('http://localhost:5000/wallet/defaultAccount', {
             method: 'POST',

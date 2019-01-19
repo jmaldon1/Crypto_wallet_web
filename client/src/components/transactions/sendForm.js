@@ -6,8 +6,6 @@ class SendForm extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            curAccountData: {},
-            curAddressData: {},
             sendAddress: '',
             amount: 0,
             fee: 1000,
@@ -20,18 +18,23 @@ class SendForm extends Component {
             formValid: false
         }
 
-        this.handleUserInput = this.handleUserInput.bind(this);
-        this.setMaxSpendableBalance = this.setMaxSpendableBalance.bind(this);
-        this.handleSubmit = this.handleSubmit.bind(this);
+        this.curAddressData = null;
+        this.curAccountData = null;
     }
 
-    componentWillReceiveProps(nextProps) {
-        this.setState({maxSpendableBalance: nextProps.maxSpendableBalance})
+    /* get updates for curAccountData and curAddressData */
+    componentDidUpdate(prevProps, prevState, snapshot){
+        this.curAddressData = this.props.addressData
+        this.curAccountData = this.props.accountData
     }
     
     componentDidMount(){
-        this.setState({curAddressData: this.props.addressData})
-        this.setState({curAccountData: this.props.accountData})
+        /* check that this.props.accountData and this.props.addressData is not empty */
+        if(Object.keys(this.props.accountData).length !== 0 && this.props.accountData.constructor === Object && Object.keys(this.props.addressData).length !== 0 && this.props.addressData.constructor === Object){
+            this.curAddressData =this.props.addressData
+            this.curAccountData = this.props.accountData
+            this.getMaxSpendableBalance(this.curAddressData)
+        }
     };
 
     getMaxSpendableBalance = (addressData) => {
@@ -41,17 +44,16 @@ class SendForm extends Component {
         var maxSpendableBalance = (amountWeHave - transactionFee)/100000000 //convert to btc
 
         this.setState({maxSpendableBalance: maxSpendableBalance})
-        return maxSpendableBalance
     }
 
-    handleUserInput (e, addressData) {
+    handleUserInput = (e, addressData) => {
         const name = e.target.name;
         const value = e.target.value;
         this.setState({[name]: value}, 
                     () => { this.validateField(name, value, addressData) });
     }
 
-    validateField(fieldName, value, addressData) {
+    validateField = (fieldName, value, addressData) => {
         let fieldValidationErrors = this.state.formErrors;
         let sendAddressValid = this.state.sendAddressValid;
         let amountValid = this.state.amountValid;
@@ -87,14 +89,16 @@ class SendForm extends Component {
         this.setState({formValid: this.state.sendAddressValid && this.state.amountValid});
     }
 
-    handleSubmit(event, addressData) {
+    handleSubmit = (event, addressData) => {
         /* prevents page refresh */
         event.preventDefault();
         /* if the form is not valid, do nothing */
         if(!this.state.formValid) return;
 
         /* send submit data to parent component */
-        this.props.onSendTx(this.state.sendAddress, addressData, this.state.amount, this.state.fee, this.state.curAccountData.id);
+        if(this.curAccountData !== null){
+            this.props.onSendTx(this.state.sendAddress, addressData, this.state.amount, this.state.fee, this.curAccountData.id);
+        }
 
         /* clears input box after submit and all validation */
         this.setState({ sendAddress: '', 
@@ -139,59 +143,65 @@ class SendForm extends Component {
         }
     }
 
-    setMaxSpendableBalance (addressData) {
+    setMaxSpendableBalance = (addressData) => {
         this.setState({amount: this.state.maxSpendableBalance})
         this.validateField('amount', this.state.maxSpendableBalance, addressData)
     }
 
     render() {
-        return(
-            <div className="tab-pane fade" id={"list-" + this.state.curAddressData.id} role="tabpanel" aria-labelledby={"list-" + this.state.curAddressData.id + "-list" }>
-                <span>
-                    Balance: {this.state.curAddressData.balance} ₿ (BTC)
-                </span>
-                <form onSubmit={(e) => this.handleSubmit(e, this.state.curAddressData)}>
-                    <div className="input-group mb-3">
-                        <div className="input-group-prepend">
-                            <span className="input-group-text" id={"basic-addon3-"+ this.state.curAddressData.id}>Address</span>
+        if(this.curAccountData !== null && this.curAddressData !== null){
+            return(
+                <div className="tab-pane fade" id={"list-" + this.curAddressData.id} role="tabpanel" aria-labelledby={"list-" + this.curAddressData.id + "-list" }>
+                    <span>
+                        Balance: {this.curAddressData.balance} ₿ (BTC)
+                    </span>
+                    <form onSubmit={(e) => this.handleSubmit(e, this.curAddressData)}>
+                        <div className="input-group mb-3">
+                            <div className="input-group-prepend">
+                                <span className="input-group-text" id={"basic-addon3-"+ this.curAddressData.id}>Address</span>
+                            </div>
+                            <input name="sendAddress" type="text" className={"form-control" + this.addClassValidationAddress} required aria-describedby={"basic-addon3-"+ this.curAddressData.id} value={this.sendAddress} onChange={(e) => this.handleUserInput(e, this.curAddressData)} />
+                            <div className="invalid-feedback">
+                                {this.state.formErrors.sendAddress}
+                            </div>
                         </div>
-                        <input name="sendAddress" type="text" className={"form-control" + this.state.addClassValidationAddress} required aria-describedby={"basic-addon3-"+ this.state.curAddressData.id} value={this.state.sendAddress} onChange={(e) => this.handleUserInput(e, this.state.curAddressData)} />
-                        <div className="invalid-feedback">
-                            {this.state.formErrors.sendAddress}
-                        </div>
-                    </div>
 
-                    <div className="input-group mb-3">
-                        <div className="input-group-prepend">
-                            <span className="input-group-text">Amount</span>
+                        <div className="input-group mb-3">
+                            <div className="input-group-prepend">
+                                <span className="input-group-text">Amount</span>
+                            </div>
+                            <input name="amount" type="number" step="0.00000001" min="0" max={this.state.maxSpendableBalance} className={"form-control" + this.state.addClassValidationAmount} required value={this.state.amount} onChange={(e) => this.handleUserInput(e, this.curAddressData)} />
+                            <div className="input-group-append">
+                                <button className="btn btn-outline-secondary" onClick={() => this.setMaxSpendableBalance(this.curAddressData)} type="button" title="Maximum Amount"><i className="fa fa-arrow-up" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            <div className="input-group-append">
+                                <span className="input-group-text">₿ (BTC)</span>
+                            </div>
+                            <div className="invalid-feedback">
+                                {this.state.formErrors.amount}
+                            </div>
                         </div>
-                        <input name="amount" type="number" step="0.00000001" min="0" max={this.state.maxSpendableBalance} className={"form-control" + this.state.addClassValidationAmount} required value={this.state.amount} onChange={(e) => this.handleUserInput(e, this.state.curAddressData)} />
-                        <div className="input-group-append">
-                            <button className="btn btn-outline-secondary" onClick={() => this.setMaxSpendableBalance(this.state.curAddressData)} type="button" title="Maximum Amount"><i className="fa fa-arrow-up" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                        <div className="input-group-append">
-                            <span className="input-group-text">₿ (BTC)</span>
-                        </div>
-                        <div className="invalid-feedback">
-                            {this.state.formErrors.amount}
-                        </div>
-                    </div>
 
-                    <div className="input-group mb-3">
-                        <div className="input-group-prepend">
-                            <label className="input-group-text" htmlFor={"inputGroupSelect-" + this.state.curAddressData.id}>Fee</label>
+                        <div className="input-group mb-3">
+                            <div className="input-group-prepend">
+                                <label className="input-group-text" htmlFor={"inputGroupSelect-" + this.curAddressData.id}>Fee</label>
+                            </div>
+                            <select name="fee" onChange={(e) => this.handleUserInput(e, this.curAddressData)} className="custom-select" id={"inputGroupSelect-" + this.curAddressData.id}>
+                                <option defaultValue value="1000">Low (1000 Satoshi)</option>
+                                <option value="5000">Medium (5000 Satoshi)</option>
+                                <option value="10000">High (10000 Satoshi)</option>
+                            </select>
                         </div>
-                        <select name="fee" onChange={(e) => this.handleUserInput(e, this.state.curAddressData)} className="custom-select" id={"inputGroupSelect-" + this.state.curAddressData.id}>
-                            <option defaultValue value="1000">Low (1000 Satoshi)</option>
-                            <option value="5000">Medium (5000 Satoshi)</option>
-                            <option value="10000">High (10000 Satoshi)</option>
-                        </select>
-                    </div>
-                    <button type="submit" className="btn btn-secondary float-right">Send Transaction</button>
-                </form>
-            </div>
-        );
+                        <button type="submit" className="btn btn-secondary float-right">Send Transaction</button>
+                    </form>
+                </div>
+            );
+        }else{
+            return(
+                <div></div>
+                )
+        }
     }
 }
 

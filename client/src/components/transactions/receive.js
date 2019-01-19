@@ -7,38 +7,27 @@ class ReceiveTx extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            curAccount: {},
             value: '',
             copied: false,
         };
+
+        this.unusedAddress = null;
     }
 
-    componentWillReceiveProps(nextProps) {
-        // this.setState({ curAccount: nextProps.accountData });
-        const unusedAddress = nextProps.accountData.addresses.filter(account => account.used === false && account.change === false);
-        this.setState({value: unusedAddress[0].address, curAccount: nextProps.accountData, copied: false});
-        /* must set to false every time or else it will break */
-        // this.setState({copied: false})
+    componentDidUpdate(prevProps, prevState, snapshot){
+        // /* update unused addresses if this.props.accountData is defined OR if prevProps is undefined and this.props.accountData is defined*/
+        if((Object.keys(this.props.accountData).length !== 0 && this.props.accountData.constructor === Object) || (Object.keys(this.props.accountData).length === 0 && this.props.accountData.constructor === Object && Object.keys(prevProps.accountData).length === 0 && prevProps.accountData.constructor === Object)){
+            this.unusedAddress = this.props.accountData.addresses.filter(account => account.used === false && account.change === false);
+            /* check for new unused address */
+            if(this.unusedAddress[0].address !== this.state.value){
+                this.setState({value: this.unusedAddress[0].address, copied: false})
+            }
+        }
+        /* must set copied back to false */
+        if(this.state.copied === true){
+            this.setState({copied: false})
+        }
     }
-
-    // static getDerivedStateFromProps(nextProps, prevState){
-    //     if(Object.keys(nextProps.accountData).length !== 0 && nextProps.accountData.constructor === Object){
-    //         const unusedAddress = nextProps.accountData.addresses.filter(account => account.used === false && account.change === false);
-    //         return{
-    //             curAccount: nextProps.accountData, 
-    //             value: unusedAddress[0].address,
-    //             copied: false
-    //         }
-    //     }
-    //     return {
-    //         curAccount: {},
-    //         value: '',
-    //         copied: false
-    //     }
-    //     // return null;
-    //     // /* must set to false every time or else it will break */
-    //     // this.setState({copied: false})
-    // }
 
     notify = () => {
         toast.info('Copied', {

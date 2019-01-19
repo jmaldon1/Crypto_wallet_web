@@ -12,9 +12,6 @@ class Accounts extends Component {
           getBalanceFromId: null,
           makeContentActiveFromId: null
         }
-        this.updateAccounts = this.updateAccounts.bind(this);
-        this.sendTx = this.sendTx.bind(this);
-        this.handleName = this.handleName.bind(this);
     };
 
     /* Get all the users accounts when the component is loaded */
@@ -27,7 +24,7 @@ class Accounts extends Component {
     };
 
     /* Get data from addAccount child component */
-    async handleName(name){
+    handleName = async (name) => {
         /* POST request */
         try{
             const rawResponse = await fetch('http://localhost:5000/wallet/addAccount', {
@@ -54,6 +51,10 @@ class Accounts extends Component {
             var newAccountTab = document.getElementById("v-pills-" + newAccountId + "-tab");
             newAccountTab.classList.add("active");
 
+            return new Promise((resolve, reject) => {
+                resolve(true);
+            });
+
         }catch (e){
             console.log(e)
             // console.log('status ' + e.status + ': ' + await e.json())
@@ -61,7 +62,7 @@ class Accounts extends Component {
     }
 
     /* Send a transaction */
-    async sendTx(address, addressData, amount, fee, id){
+    sendTx = async (address, addressData, amount, fee, id) => {
         /* POST request */
         try{
             const rawResponse = await fetch('http://localhost:5000/wallet/sendTx', {
@@ -79,6 +80,9 @@ class Accounts extends Component {
             if (rawResponse.status !== 200) throw await rawResponse
             const results = await rawResponse.json();
             console.log(results)
+            return new Promise((resolve, reject) => {
+                resolve(true);
+            });
         }catch (e){
             console.log(e)
         }
@@ -90,7 +94,7 @@ class Accounts extends Component {
     };
 
     /* make a get request to API that retrieves all current Accounts */
-    updateAccounts(){
+    updateAccounts = () => {
         fetch('http://localhost:5000/wallet/accounts')
         .then(res => res.json())
         .then(results => this.setState({accounts: results.accounts, nextAccount: results.nextAccount}));
@@ -111,7 +115,7 @@ class Accounts extends Component {
                                 aria-controls={"v-pills-" + account.id} 
                                 aria-selected={account.defaultAccount === true ? "true" : "false"}>{account.name} <br/> 
                                     <span className="bold">{account.balance} ₿</span>
-                            </a>
+                            </a> 
                     )}
                     <a className="nav-link" id="v-pills-addAccount-tab" data-toggle="pill" href="#v-pills-addAccount" role="tab" aria-controls="v-pills-addAccount" aria-selected="false"><i className="fa fa-plus" aria-hidden="true"></i>
                     Add Account</a>
@@ -119,7 +123,7 @@ class Accounts extends Component {
                 </div>
                 <div className="col">
                     <div className="tab-content" id="v-pills-tabContent">
-                        {this.state.accounts.map(account =>
+                       {this.state.accounts.map(account =>
                            <EachAccount key={account.id} 
                                         curAccountData={account} 
                                         onDefault={this.updateAccounts} 
@@ -137,7 +141,9 @@ class Accounts extends Component {
                             </nav>
                             <div className="tab-content" id="nav-tabContent">
                                 <div className="tab-pane fade show active" id="nav-add" role="tabpanel" aria-labelledby="nav-add-tab">
-                                    <AddAccount onNameSelect={this.handleName} nextAccountFromParent={this.state.nextAccount} /> 
+                                    <AddAccount 
+                                        onNameSelect={this.handleName} 
+                                        nextAccountFromParent={this.state.nextAccount} />
                                 </div>
                             </div>
                         </div>

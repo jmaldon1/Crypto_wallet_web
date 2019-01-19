@@ -7,37 +7,38 @@ import React, { Component } from 'react';
 class TxHistory extends Component {
     constructor(props) {
         super(props);
-        this.state = {
-            curAccountData: {},
-            txs: [],
-            addresses: []
-        }
+        
+        this.curAccountData = null;
+        this.addresses = null;
+        this.txs = null;
+
         this.ws = null;
         this.openSocket = false;
         this.addressArrCache = [];
         this.count = 0;
     }
 
-    static getDerivedStateFromProps(nextProps, prevState){
-        if(Object.keys(nextProps.accountData).length !== 0 && nextProps.accountData.constructor === Object){
-            return {
-                curAccountData: nextProps.accountData,
-                txs: nextProps.accountData.txs,
-                addresses: nextProps.accountData.addresses
-            }
-        }
-        return null;
+    /* returns a promise with the websocket once a connection has been made */
+    setupWebSocket = () => {
+        return new Promise((resolve, reject) => {
+            var ws = new WebSocket('wss://testnet-ws.smartbit.com.au/v1/blockchain');
+            ws.onopen = () => {
+                resolve(ws);
+            };
+            ws.onerror = function(err) {
+                reject(err);
+            };
+        });
     }
 
-    componentWillUnmount(){
-        /* close connection */
-        if(this.openSocket){
-            this.ws.close();
-        }
-    }
-
-    async componentDidUpdate(prevProps){
+    async componentDidUpdate(prevProps, prevState, snapshot){
         try{
+            if(Object.keys(this.props.accountData).length !== 0 && this.props.accountData.constructor === Object){
+                this.curAccountData = this.props.accountData
+                this.addresses = this.curAccountData.addresses
+                this.txs = this.curAccountData.txs
+            }
+
             /* Open websocket if it is not already open */
             if(!this.openSocket){
                 this.ws = await this.setupWebSocket()
@@ -52,7 +53,7 @@ class TxHistory extends Component {
 
             /* create an array of all the addresses */
             var addressArr = []
-            this.state.addresses.forEach(addressesData =>{
+            this.addresses.forEach(addressesData =>{
                 addressArr.push(addressesData.address)
             })
 
@@ -81,29 +82,15 @@ class TxHistory extends Component {
             /* if we get an address event, create a notification on the TX tab */
             if(txEvent.type === 'address'){
                 this.count += 1
-                this.props.newTx(this.count)
-                this.props.getBalances(this.state.curAccountData.id)
+                this.props.newTx(this.count, this.curAccountData.id)
             }
             /* DEBUG */
             // console.log(txEvent)
             // if(txEvent.type !== "subscribe-response"){
             //     this.count += 1
-            //     this.props.newTx(this.count)
+            //     this.props.newTx(this.count, this.curAccountData.id)
             // }
         }
-    }
-
-    /* returns a promise with the websocket once a connection has been made */
-    setupWebSocket = () => {
-        return new Promise((resolve, reject) => {
-            var ws = new WebSocket('wss://testnet-ws.smartbit.com.au/v1/blockchain');
-            ws.onopen = () => {
-                resolve(ws);
-            };
-            ws.onerror = function(err) {
-                reject(err);
-            };
-        });
     }
 
     /* checks for array equality */
@@ -117,36 +104,50 @@ class TxHistory extends Component {
         return true;
     }
 
+    componentWillUnmount(){
+        /* close connection */
+        if(this.openSocket){
+            this.ws.close();
+            this.openSocket = false;
+        }
+    }
+
     render() {
-        if(this.state.txs.length !== 0){
-            return (
-                <table className="table table-striped table-sm table-responsive table-hover table-bordered">
-                    <thead className="thead-light">
-                        <tr>
-                            <th id="time-table-head" scope="col">Time</th>
-                            <th id="hash-table-head" scope="col">Transaction Hash</th>
-                            <th id="amount-table-head" scope="col">Amount (₿)</th>
-                            <th id="amount-table-balance" scope="col">Balance (₿)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {this.state.txs.map(tx => 
-                            <tr key={tx.id}>
-                                <td>{tx.date} {tx.time}</td>
-                                <td><a href={"https://live.blockcypher.com/btc-testnet/tx/" + tx.hash} rel="noopener noreferrer" target="_blank">{tx.hash}</a></td>
-                                <td className={tx.result < 0 ? "text-danger" : "text-success"}>{tx.result}</td>
-                                <td>{tx.balance}</td>
+        if(this.curAccountData !== null){
+            if(this.txs.length !== 0){
+                return (
+                    <table className="table table-striped table-sm table-responsive table-hover table-bordered">
+                        <thead className="thead-light">
+                            <tr>
+                                <th id="time-table-head" scope="col">Time</th>
+                                <th id="hash-table-head" scope="col">Transaction Hash</th>
+                                <th id="amount-table-head" scope="col">Amount (₿)</th>
+                                <th id="amount-table-balance" scope="col">Balance (₿)</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
-            ); 
+                        </thead>
+                        <tbody>
+                            {this.txs.map(tx => 
+                                <tr key={tx.id}>
+                                    <td>{tx.date} {tx.time}</td>
+                                    <td><a href={"https://live.blockcypher.com/btc-testnet/tx/" + tx.hash} rel="noopener noreferrer" target="_blank">{tx.hash}</a></td>
+                                    <td className={tx.result < 0 ? "text-danger" : "text-success"}>{tx.result}</td>
+                                    <td>{tx.balance}</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                ); 
+            }else{
+                 return(
+                    <span>
+                        There are currently 0 transactions for this account!
+                    </span>
+                );
+            }
         }else{
-             return(
-                <span>
-                    There are currently 0 transactions for this account!
-                </span>
-            );
+            return(
+                <div></div>
+                )
         }
     }
 }
