@@ -10,7 +10,8 @@ class Accounts extends Component {
           accounts: [],
           nextAccount: 0,
           getBalanceFromId: null,
-          makeContentActiveFromId: null
+          makeContentActiveFromId: null,
+          deviceConnection: null
         }
     };
 
@@ -20,6 +21,12 @@ class Accounts extends Component {
         .then(res => res.json())
         .then(results => {
             this.setState({accounts: results.accounts, nextAccount: results.nextAccount}, () => console.log('Results: ', results))
+        });
+
+        fetch('http://localhost:5000/wallet/usbConnect')
+        .then(res => res.json())
+        .then(results => {
+            this.setState({deviceConnection: results.deviceConnection})
         });
     };
 
@@ -51,9 +58,7 @@ class Accounts extends Component {
             var newAccountTab = document.getElementById("v-pills-" + newAccountId + "-tab");
             newAccountTab.classList.add("active");
 
-            return new Promise((resolve, reject) => {
-                resolve(true);
-            });
+            return true;
 
         }catch (e){
             console.log(e)
@@ -80,9 +85,7 @@ class Accounts extends Component {
             if (rawResponse.status !== 200) throw await rawResponse
             const results = await rawResponse.json();
             console.log(results)
-            return new Promise((resolve, reject) => {
-                resolve(true);
-            });
+            return true;
         }catch (e){
             console.log(e)
         }
@@ -93,7 +96,7 @@ class Accounts extends Component {
         this.setState({getBalanceFromId: account.id})
     };
 
-    /* make a get request to API that retrieves all current Accounts */
+    /* GET updated account data */
     updateAccounts = () => {
         fetch('http://localhost:5000/wallet/accounts')
         .then(res => res.json())
@@ -105,6 +108,9 @@ class Accounts extends Component {
             <div className="row">
                 <div className="col-sm-2">
                     <div className="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                        <div className={this.state.deviceConnection ? "alert alert-success" : "alert alert-danger"} role="alert">
+                            {this.state.deviceConnection ? "Device Connected" : "Device Not Connected"}
+                        </div>
                         {this.state.accounts.map(account =>
                             <a  key={account.id} onClick={() => { this.tabClick(account) }} 
                                 className={account.defaultAccount === true ? "nav-link active" : "nav-link"} 
@@ -117,11 +123,12 @@ class Accounts extends Component {
                                     <span className="bold">{account.balance} ₿</span>
                             </a> 
                     )}
-                    <a className="nav-link" id="v-pills-addAccount-tab" data-toggle="pill" href="#v-pills-addAccount" role="tab" aria-controls="v-pills-addAccount" aria-selected="false"><i className="fa fa-plus" aria-hidden="true"></i>
-                    Add Account</a>
+                        <a className="nav-link" id="v-pills-addAccount-tab" data-toggle="pill" href="#v-pills-addAccount" role="tab" aria-controls="v-pills-addAccount" aria-selected="false"><i className="fa fa-plus" aria-hidden="true"></i>
+                        Add Account</a>
                     </div>
                 </div>
                 <div className="col">
+
                     <div className="tab-content" id="v-pills-tabContent">
                        {this.state.accounts.map(account =>
                            <EachAccount key={account.id} 

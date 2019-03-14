@@ -62,9 +62,7 @@ class EachAccounts extends Component {
             }else{
                 this.setState({curAccountData: results})
                 this.props.updateAccounts()
-                return new Promise((resolve, reject) => {
-                    resolve(true);
-                });
+                return true;
             }
         }catch (e){
             console.log(e)
@@ -88,20 +86,23 @@ class EachAccounts extends Component {
 
             this.setState({curAccountData: results})
             this.props.updateAccounts()
-            return new Promise((resolve, reject) => {
-                resolve(true);
-            });
+            return true;
+            
         }catch (e){
             console.log(e)
         }
     }
 
     /* When an transaction tab is clicked, check balance of account for new transactions */
-    tabClick = (account) => {
+    txTabClick = (account) => {
         this.getBalances(account.id)
         /* reset TX notifications */
         this.setState({resetTxNotification: true, newTxNotification: ''})
     };
+
+    sendTabClick = (account) => {
+        this.getBalances(account.id)
+    }
 
     /* called if a new TX is recieved */
     newTx = (count, id) => {
@@ -139,7 +140,7 @@ class EachAccounts extends Component {
                 <nav>
                     <div className="nav nav-tabs" id="nav-tab" role="tablist">
                         <a  className="nav-item nav-link" 
-                            onClick={() => { this.tabClick(this.state.curAccountData) }} 
+                            onClick={() => { this.txTabClick(this.state.curAccountData) }} 
                             id={"nav-transactions-tab-id-" + this.state.curAccountData.id} 
                             data-toggle="tab" 
                             href={"#nav-transactions-id-" + this.state.curAccountData.id} 
@@ -148,9 +149,10 @@ class EachAccounts extends Component {
                             aria-selected="false">
                                 <i className="fa fa-exchange" aria-hidden="true"></i>
                                 Transactions 
-                                <span className="badge badge-info">{this.state.newTxNotification}</span>
+                                <span className="badge badge-pill badge-success">{this.state.newTxNotification}</span>
                         </a>
-                        <a  className="nav-item nav-link" 
+                        <a  className="nav-item nav-link"
+                            onClick={() => { this.sendTabClick(this.state.curAccountData) }}
                             id={"nav-send-tab-id-" + this.state.curAccountData.id} 
                             data-toggle="tab" 
                             href={"#nav-send-id-" + this.state.curAccountData.id} 

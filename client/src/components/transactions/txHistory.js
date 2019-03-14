@@ -14,7 +14,9 @@ class TxHistory extends Component {
 
         this.ws = null;
         this.openSocket = false;
+
         this.addressArrCache = [];
+
         this.count = 0;
     }
 
@@ -37,30 +39,31 @@ class TxHistory extends Component {
                 this.curAccountData = this.props.accountData
                 this.addresses = this.curAccountData.addresses
                 this.txs = this.curAccountData.txs
-            }
 
-            /* Open websocket if it is not already open */
-            if(!this.openSocket){
-                this.ws = await this.setupWebSocket()
-                this.openSocket = true
-            }
+                /* Open websocket if it is not already open */
+                if(!this.openSocket){
+                    this.ws = await this.setupWebSocket()
+                    this.openSocket = true
+                }
 
-            /* reset count if resetNewTxCount is true */
-            if(this.props.resetNewTxCount) {
-                this.props.resetFeedback(false)
-                this.count = 0;
-            }
+                /* if resetNewTxCount is true that means the user clicked the transaction tab,
+                    so we need to reset the notification counter*/
+                if(this.props.resetNewTxCount) {
+                    this.props.resetFeedback(false)
+                    this.count = 0;
+                }
 
-            /* create an array of all the addresses */
-            var addressArr = []
-            this.addresses.forEach(addressesData =>{
-                addressArr.push(addressesData.address)
-            })
+                /* create an array of all the addresses */
+                var addressArr = []
+                this.addresses.forEach(addressesData =>{
+                    addressArr.push(addressesData.address)
+                })
 
-            /* if the address array's are not equal, it means new addresses have been added */
-            if(!this.arrayEquality(addressArr, this.addressArrCache)){
-                this.addressArrCache = addressArr
-                this.subscribeToAddressChannels(addressArr)
+                /* if the address array's are not equal, it means new addresses have been added */
+                if(!this.arrayEquality(addressArr, this.addressArrCache)){
+                    this.addressArrCache = addressArr
+                    this.subscribeToAddressChannels(addressArr)
+                }
             }
         }catch(e){
             console.log(e)
@@ -105,7 +108,7 @@ class TxHistory extends Component {
     }
 
     componentWillUnmount(){
-        /* close connection */
+        /* close websocket connection */
         if(this.openSocket){
             this.ws.close();
             this.openSocket = false;
@@ -113,41 +116,36 @@ class TxHistory extends Component {
     }
 
     render() {
-        if(this.curAccountData !== null){
-            if(this.txs.length !== 0){
-                return (
-                    <table className="table table-striped table-sm table-responsive table-hover table-bordered">
-                        <thead className="thead-light">
-                            <tr>
-                                <th id="time-table-head" scope="col">Time</th>
-                                <th id="hash-table-head" scope="col">Transaction Hash</th>
-                                <th id="amount-table-head" scope="col">Amount (₿)</th>
-                                <th id="amount-table-balance" scope="col">Balance (₿)</th>
+        if(this.curAccountData === null) return null;
+        if(this.txs.length !== 0){
+            return (
+                <table className="table table-striped table-sm table-responsive table-hover table-bordered">
+                    <thead className="thead-light">
+                        <tr>
+                            <th id="time-table-head" scope="col">Time</th>
+                            <th id="hash-table-head" scope="col">Transaction Hash</th>
+                            <th id="amount-table-head" scope="col">Amount (₿)</th>
+                            <th id="amount-table-balance" scope="col">Balance (₿)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {this.txs.map(tx => 
+                            <tr key={tx.id}>
+                                <td>{tx.date} {tx.time}</td>
+                                <td><a href={"https://live.blockcypher.com/btc-testnet/tx/" + tx.hash} rel="noopener noreferrer" target="_blank">{tx.hash}</a></td>
+                                <td className={tx.result < 0 ? "text-danger" : "text-success"}>{tx.result}</td>
+                                <td>{tx.balance}</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {this.txs.map(tx => 
-                                <tr key={tx.id}>
-                                    <td>{tx.date} {tx.time}</td>
-                                    <td><a href={"https://live.blockcypher.com/btc-testnet/tx/" + tx.hash} rel="noopener noreferrer" target="_blank">{tx.hash}</a></td>
-                                    <td className={tx.result < 0 ? "text-danger" : "text-success"}>{tx.result}</td>
-                                    <td>{tx.balance}</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                ); 
-            }else{
-                 return(
-                    <span>
-                        There are currently 0 transactions for this account!
-                    </span>
-                );
-            }
+                        )}
+                    </tbody>
+                </table>
+            ); 
         }else{
-            return(
-                <div></div>
-                )
+             return(
+                <span>
+                    There are currently 0 transactions for this account!
+                </span>
+            );
         }
     }
 }

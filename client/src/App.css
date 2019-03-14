@@ -42,3 +42,10 @@
 .bold{
   font-weight: bold;
 }
+
+.hideEle{
+  display: none;
+}
+.showEle{
+  display: block;
+}

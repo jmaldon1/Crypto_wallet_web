@@ -8,9 +8,13 @@ var bitcoin = require('bitcoinjs-lib');
 var moment = require('moment');
 const uuidv4 = require('uuid/v4');
 const testnet = bitcoin.networks.testnet
-const FPGA = true
+const FPGA = true;
 
 // var accountArray = [];
+var device;
+var inEndpoint;
+var outEndpoint;
+
 var accountArray = [
     {
         "addresses": [
@@ -22,7 +26,8 @@ var accountArray = [
                 "utxs": [],
                 "used": false,
                 "change": false,
-                "unconfirmedTxs": 0,
+                "unconfirmedTxs": [],
+                "unconfirmedTxTotalBalance": 0,
                 "id": 0
             },
             {
@@ -33,7 +38,8 @@ var accountArray = [
                 "utxs": [],
                 "used": false,
                 "change": false,
-                "unconfirmedTxs": 0,
+                "unconfirmedTxs": [],
+                unconfirmedTxTotalBalance: 0,
                 "id": 1
             },
             {
@@ -44,20 +50,21 @@ var accountArray = [
                 "utxs": [],
                 "used": false,
                 "change": false,
-                "unconfirmedTxs": 0,
+                "unconfirmedTxs": [],
+                unconfirmedTxTotalBalance: 0,
                 "id": 2
             },
-            {
-                "keypath": "m/44h/1h/0h/1/0",
-                "address": "mp8hL5KPhy71XU8Q1HfaYtJYJHcBMciFKN",
-                "numOfTx": 0,
-                "balance" : 0,
-                "utxs": [],
-                "used": false,
-                "change": true,
-                "unconfirmedTxs": 0,
-                "id": 3
-            }
+            // {
+            //     "keypath": "m/44h/1h/0h/1/0",
+            //     "address": "mp8hL5KPhy71XU8Q1HfaYtJYJHcBMciFKN",
+            //     "numOfTx": 0,
+            //     "balance" : 0,
+            //     "utxs": [],
+            //     "used": false,
+            //     "change": true,
+            //     "unconfirmedTxs": 0,
+            //     "id": 3
+            // }
         ],
         "id": 1,
         "name": "Account #1",
@@ -66,19 +73,32 @@ var accountArray = [
         "defaultAccount": true,
         "nextAddrIdx": 3,
         "nextChangeIdx": 1,
-    }
-    // {
-    //     "addresses": [
-    //         {
-    //             "keypath": "m/44h/0h/1h/0/0",
-    //             "address": "2NAZ2GVgh1BQvQQeC5GwoKj4v4bk4K2wqgR",
-    //             "used": false
-    //         }
-    //     ],
-    //     "id": 2,
-    //     "name": "Account #2",
-    //     "defaultAccount": false
-    // },
+        "time": null
+    },
+    {
+        "addresses": [
+            {
+                "keypath": "m/44h/1h/1h/0/0",
+                "address": "mp8hL5KPhy71XU8Q1HfaYtJYJHcBMciFKN",
+                "numOfTx": 0,
+                "balance" : 0,
+                "utxs": [],
+                "used": false,
+                "change": false,
+                "unconfirmedTxs": [],
+                "unconfirmedTxTotalBalance": 0,
+                "id": 0
+            }
+        ],
+        "id": 2,
+        "name": "Account #2",
+        "balance": 0,
+        "txs": [],
+        "defaultAccount": false,
+        "nextAddrIdx": 1,
+        "nextChangeIdx": 0,
+        "time": null
+    },
     // {
     //     "addresses": [
     //         {
@@ -93,19 +113,32 @@ var accountArray = [
     // }
 ]
 
+router.get('/usbConnect', async (req, res) => {
+	try{
+		if(checkDeviceConnection() === false){
+			return res.json({"deviceConnection": false})
+		}
+		return res.json({"deviceConnection": true})
+	}catch(e){
+		console.log(e)
+		return res.status(500).json(e)
+	}
+})
+
 router.get('/accounts', async (req, res) => {
 	try{
 		var nextAccount = getMissingMinAccountIdx()
 		return res.json({"accounts": accountArray, "nextAccount": nextAccount});
 	}catch(e){
 		console.log(e)
-		return res.status(400).json(e)
+		return res.status(500).json(e)
 	}
 });
 
 router.post("/addAccount", async (req, res) => {
 	try{
 		accountIdx = getMissingMinAccountIdx();
+		address = null;
 		
 		/* Account */
 		var tempAccountDict = {}
@@ -119,6 +152,7 @@ router.post("/addAccount", async (req, res) => {
 		tempAccountDict['nextChangeIdx'] = 0
 		tempAccountDict['txs'] = []
 		tempAccountDict['balance'] = 0
+		tempAccountDict['time'] = moment().unix()
 
 		/* Address */
 		var tempAddressDict = {}
@@ -130,14 +164,45 @@ router.post("/addAccount", async (req, res) => {
 		tempAddressDict['utxs'] = []
 		tempAddressDict['id'] = 0
 		tempAddressDict['change'] = false
-		tempAccountDict['unconfirmedTxs'] = 0
+		tempAddressDict['unconfirmedTxs'] = []
+		tempAddressDict['unconfirmedTxTotalBalance'] = 0
 		
 		/* TALK TO FPGA */
-		const keyPair = bitcoin.ECPair.makeRandom({ network: testnet })
-		const { address } = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey, network: testnet })
-		tempAddressDict['address'] = address
+		/*
+		1. Create Master Key
+		2. Derive Child node from master key
+		3. Send Public Address back to here
+		*/
 
-		tempAccountDict['addresses'].push(tempAddressDict)
+		/* if this is the first account being created, the FPGA needs to create a masterkey */
+		if(accountIdx === 1){
+			payload = 'masterkey:' + keyPath + '\n';
+			outEndpoint.transfer(new Buffer.from(payload), function (err) {
+				if(err) throw err
+			});
+			var response = await receiveDataFromUSB(inEndpoint);
+
+			console.log("received: " + response)
+			// address should be recieved
+			address = response.trim();
+		}else{
+			payload = 'keypath:' + keyPath + '\n';
+			/* any other account we will only need to retrieve the address that the FPGA creates */
+			outEndpoint.transfer(new Buffer.from(payload), function (err) {
+				if(err) throw err
+			});
+			var response = await receiveDataFromUSB(inEndpoint);
+
+			console.log("received: " + response)
+			// address should be recieved
+			address = response.trim();
+		}
+
+		// const keyPair = bitcoin.ECPair.makeRandom({ network: testnet })
+		// const { address } = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey, network: testnet })
+		tempAddressDict['address'] = address;
+
+		tempAccountDict['addresses'].push(tempAddressDict);
 
 		/* set the first account to the default account */
 		accountIdx === 1 && accountArray.length === 0 ? tempAccountDict['defaultAccount'] = true : tempAccountDict['defaultAccount'] = false;
@@ -222,6 +287,7 @@ router.post('/createAddress', async (req, res) => {
 		var accountData = createAddress(req.body.idx, req.body.change)
 
 		// console.log(JSON.stringify(accountArray, null, 4))
+		accountData.time = moment().unix();
 		return res.json(accountData);
 	}catch(e){
 		console.log(e)
@@ -252,22 +318,23 @@ router.post('/checkBalance', async (req, res) => {
 
 		/* if there are no addresses to check the balance of return */
 		if(addressArr.length === 0){
+			accountData.time = moment().unix()
 			return res.json(accountData)
 		}
 
 		/* make a request that gets info on every address */
 		var requestURL = 'https://testnet.blockchain.info/multiaddr'
 		var queryParameters = {  active: addressArr.join('|') };
-		var response = await request({url: requestURL, qs: queryParameters, timeout: 5000})
+		var response = await request({url: requestURL, qs: queryParameters})
 		response = JSON.parse(response)
-		// console.log(JSON.stringify(response, null, 4))
+		console.log(JSON.stringify(response, null, 4))
 
 		/* get total balance of all addresses (rounded to appropriate decimal) */
 		accountData.balance = floorBalance(response.wallet.final_balance/100000000);
 
-		/* loop through each address */
+		/* COLLECT ALL UTXO'S */
 		response.addresses.forEach(e => {
-			/* find the balance, number of tx's, and sets 'used' to true if the address has transactions */
+			/* find the balance, number of tx's, and set 'used' to true if the address has transactions */
 			var addrData = accountData.addresses.filter(function(account) {
 			    return account.address === e.address;
 			})[0];
@@ -279,26 +346,27 @@ router.post('/checkBalance', async (req, res) => {
 			addrData.balance = e.final_balance/100000000;
 			addrData.numOfTx = e.n_tx
 			addrData.used = true
+			/* reset utxs so we are always checking for new ones, while old ones get removed */
+			addrData.utxs = [];
+			addrData.unconfirmedTxs = [];
+			addrData.unconfirmedTxTotalBalance = 0;
+
 			/* find every transaction for each address */
 			response.txs.forEach(tx => {
-				txExists = accountData.txs.find(obj => {
-				  return obj.hash === tx.hash
+				/* look through every output tx that matches the current address to find it's UTXO's */
+				tx.out.forEach(output => {
+					if(e.address === output.addr && output.spent === false){
+						tempUtxDict = {}
+						tempUtxDict['n'] = output.n
+						tempUtxDict['script'] = output.script
+						tempUtxDict['txIndex'] = output.tx_index
+						addrData.utxs.push(tempUtxDict)
+					}
 				})
-				if(!txExists){
-					/* look through every output tx that matches the current address to find it's UTXO's */
-					tx.out.forEach(output => {
-						if(e.address === output.addr && output.spent === false){
-							tempUtxDict = {}
-							tempUtxDict['n'] = output.n
-							tempUtxDict['script'] = output.script
-							tempUtxDict['txIndex'] = output.tx_index
-							addrData.utxs.push(tempUtxDict)
-						}
-					})
-				}
 			})
 		})
 
+		/* COLLECT ALL TRANSACTIONS */
 		/* loop through each transaction */
 		response.txs.forEach(tx => {
 			/* check if the TX in the response already exists in our wallet */
@@ -335,29 +403,36 @@ router.post('/checkBalance', async (req, res) => {
 		var response = await request({url: requestURL, qs: queryParameters, timeout: 5000})
 		response = JSON.parse(response)
 
-		/* loop through each address in addressArr */
+		/* ADD SOME MISSING VALUES TO UTXO'S */
 		addressArr.forEach(e => {
 			/* get the data for each address in addressArr */
 			var addrData = accountData.addresses.filter(function(account) {
 				    return account.address === e;
 				})[0]
-			addrData.unconfirmedTxs = 0
 			/* look through every UTXO that was returned in the response */
 			response.unspent_outputs.forEach(utxoFromResponse => {
 				/* look through each of the tx's in each address we have stored */
 				addrData.utxs.forEach(utxoFromDb => {
 					/* if the tx index's match then we add the tx hash to each tx */
 					if(utxoFromResponse.tx_index === utxoFromDb.txIndex){
-						utxoFromDb['txHash'] = utxoFromResponse.tx_hash_big_endian
-						utxoFromDb['confirmations'] = utxoFromResponse.confirmations
+						utxoFromDb['txHash'] = utxoFromResponse.tx_hash_big_endian;
+						utxoFromDb['confirmations'] = utxoFromResponse.confirmations;
+						utxoFromDb['value'] = utxoFromResponse.value/100000000; //convert to btc
+
 						/* if there is an unconfirmed transaction (anything less than 3 confirmations),
 							we will remove that UTXO from the list and add 1 to the unconfirmedTX counter  */
 						if(utxoFromDb.confirmations < 3){
 							var indexOfUnconfirmedTx = addrData.utxs.findIndex(x => x.txIndex === utxoFromDb.txIndex)
 							/* just a check to make sure the index was found */
-							if (indexOfUnconfirmedTx > -1) {
+							if (indexOfUnconfirmedTx !== -1) {
+								/* push unconfirmed UTXO onto unconfirmed TX list */
+								addrData.unconfirmedTxs.push(addrData.utxs[indexOfUnconfirmedTx])
+
+								/* add the value of each unconfirmed UTXO to a total */
+								addrData.unconfirmedTxTotalBalance += utxoFromDb.value;
+
+								/* remove the unconfirmed UTXO from the UTXO list */
 							 	addrData.utxs.splice(indexOfUnconfirmedTx, 1);
-							 	addrData.unconfirmedTxs += 1
 							}else{
 								throw 'Index of unconfirmed transaction not found'
 							}
@@ -368,12 +443,15 @@ router.post('/checkBalance', async (req, res) => {
 		})
 		// console.log(JSON.stringify(accountData, null, 4))
 		// console.log(JSON.stringify(accountArray, null, 4))
+		accountData.time = moment().unix()
 		return res.json(accountData)
 	} catch (e){
 		/* if no free outputs found, return accountData */
 		if(e.statusCode === 500 && e.error === 'No free outputs to spend'){
+			accountData.time = moment().unix()
 			res.json(accountData)
 		}else{
+			console.log(e)
 			return res.status(500).json(e)
 		}
 	}
@@ -430,6 +508,7 @@ router.post('/sendTx', txValidation,  async (req, res) => {
 		return res.json('done')
 
 	}catch(e){
+		console.log(e)
 		return res.status(500).json(e)
 	}
 });
@@ -489,12 +568,16 @@ function createAddress(id, change){
 		const keyPair = bitcoin.ECPair.makeRandom({ network: testnet })
 		const { address } = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey, network: testnet })
 
-		tempAddressDict['address'] = address
-		tempAddressDict['balance'] = 0
+		tempAddressDict['address'] = address;
+		tempAddressDict['balance'] = 0;
 		tempAddressDict['numOfTx'] = 0;
-		tempAddressDict['used'] = false
-		tempAddressDict['utxs'] = []
-		tempAddressDict['id'] = accountData.addresses.length
+		tempAddressDict['used'] = false;
+		tempAddressDict['utxs'] = [];
+		tempAddressDict['id'] = accountData.addresses.length;
+		tempAddressDict['unconfirmedTxs'] = [];
+		tempAddressDict['unconfirmedTxTotalBalance'] = 0;
+
+
 		accountData['addresses'].push(tempAddressDict)
 	}else{
 		console.log('no address created, because there is already an unused address available')
@@ -511,7 +594,7 @@ function floorBalance(finalBalance){
 		var m = -Math.floor( Math.log(dec) / Math.log(10) + 1)+1;
 		/* if m is anything less than 2, floor to 2 decimal places */
 		if(m <= 2){
-			var flooredBalanceBtc = Math.floor(finalBalanceBtc * Number("1" + ('0').repeat(2))) / Number("1" + ('0').repeat(2))
+			var flooredBalanceBtc = Math.floor(finalBalanceBtc*100)/100
 			return flooredBalanceBtc
 		/* else floor to appropriate decimal */
 		}else{
@@ -528,6 +611,50 @@ function sortTxs(unsortedTxs) {
     unsortedTxs.sort((a,b) => {
     	return b.unix - a.unix;
     })
+}
+
+function checkDeviceConnection(){
+	//VENDOR ID: 0x10c4
+	//PRODUCT ID: 0xea60
+
+	if(usb.findByIds(0x10c4, 0xea60) === undefined){
+		return false
+	}
+	if(device === undefined){
+		device = usb.findByIds(0x10c4, 0xea60)
+		// console.log(usb.findByIds(0x10c4, 0xea60))
+
+		/* connect to device */
+		device.open();
+		var devInterface = device.interfaces[0];
+		devInterface.claim();
+
+		var endpoints = device.interfaces[0].endpoints;
+		inEndpoint = endpoints[0];
+		outEndpoint = endpoints[1];
+	}
+	return true
+}
+
+function pollUSB(inEndpoint){
+	return new Promise((resolve, reject) => {
+		inEndpoint.transfer(1000000, (error, data) => {
+			if(error !== undefined) reject(error)
+			/* resolve promise if data was retreived */
+			resolve(data.toString('utf8'));
+		});
+    });
+}
+
+async function receiveDataFromUSB(inEndpoint){
+	var response = await pollUSB(inEndpoint);
+	/* sometimes we don't get all the data from the usb, so we need to keep receiving data until
+		we hit a new line char 
+	*/
+	while(response[response.length-1] !== '\n'){
+		response = response + await pollUSB(inEndpoint);
+	}
+	return response;
 }
 
 module.exports = router;

@@ -15,8 +15,8 @@ class ReceiveTx extends Component {
     }
 
     componentDidUpdate(prevProps, prevState, snapshot){
-        // /* update unused addresses if this.props.accountData is defined OR if prevProps is undefined and this.props.accountData is defined*/
-        if((Object.keys(this.props.accountData).length !== 0 && this.props.accountData.constructor === Object) || (Object.keys(this.props.accountData).length === 0 && this.props.accountData.constructor === Object && Object.keys(prevProps.accountData).length === 0 && prevProps.accountData.constructor === Object)){
+        /* update unused addresses if this.props.accountData is defined OR if this.props.accountData is defined and prevProps is undefined*/
+        if((Object.keys(this.props.accountData).length !== 0 && this.props.accountData.constructor === Object) || (Object.keys(this.props.accountData).length !== 0 && this.props.accountData.constructor === Object && Object.keys(prevProps.accountData).length === 0 && prevProps.accountData.constructor === Object)){
             this.unusedAddress = this.props.accountData.addresses.filter(account => account.used === false && account.change === false);
             /* check for new unused address */
             if(this.unusedAddress[0].address !== this.state.value){

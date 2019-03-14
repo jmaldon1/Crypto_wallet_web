@@ -11,9 +11,10 @@ class SendTx extends Component {
     }
 
     componentDidUpdate(prevProps, prevState, snapshot){
-        if((Object.keys(this.props.accountData).length !== 0 && this.props.accountData.constructor === Object) || (Object.keys(this.props.accountData).length === 0 && this.props.accountData.constructor === Object && Object.keys(prevProps.accountData).length === 0 && prevProps.accountData.constructor === Object)){
+        if((Object.keys(this.props.accountData).length !== 0 && this.props.accountData.constructor === Object) || (Object.keys(this.props.accountData).length !== 0 && this.props.accountData.constructor === Object && Object.keys(prevProps.accountData).length === 0 && prevProps.accountData.constructor === Object)){
+            /* if prevProps is undefined or if the time in this.props is greater than the time in prevProps */
             this.curAccountData = this.props.accountData;
-            this.spendableAddresses = this.curAccountData.addresses.filter(account => account.used === true && account.balance);
+            this.spendableAddresses = this.curAccountData.addresses.filter(address => address.used === true && address.balance);
         }
     }
 
@@ -23,63 +24,51 @@ class SendTx extends Component {
     }
 
     render() {
-        if(this.curAccountData !== null){
-            var unlockIcon = <i class="fa fa-unlock" aria-hidden="true"></i>
-            if(this.spendableAddresses.length !== 0){
-                return (
-                    <div className="row">
-                        <div className="col-5">
-                            <div className="list-group" id="list-tab" role="tablist">
-                            {this.spendableAddresses.map(address => 
-                                <span key={address.id}>
-                                    {address.unconfirmedTxs ? address.unconfirmedTxs : ''}
-                                </span>
-                            )}
-                            {this.spendableAddresses.map(address =>
-                                address.unconfirmedTxs && address.utxs.length === 0 ? (
-                                        <span>{address.unconfirmedTxs + 'Unconfirmed Transactions'} </span>
-                                    ) : (
-                                         <a  key={address.id}
-                                            className="list-group-item list-group-item-action wrap" 
-                                            id={"list-" + address.id + "-list" } 
-                                            data-toggle="list" 
-                                            href={"#list-" + address.id} 
-                                            role="tab" 
-                                            style={{"textAlign": "center"}} 
-                                            aria-controls={address.id}>
-                                                {address.address} <br/> 
-                                                <span className="bold">{address.balance} ₿ (BTC) <br/> 
-                                                    <span>{address.unconfirmedTxs ? address.unconfirmedTxs + 'unconfirmed transactions' : ''}</span>
-                                                </span>
-                                        </a>
-                                    )
-                            )}
-                            </div>
-                        </div>
-                        <div className="col-5">
-                            <div className="tab-content" id="nav-tabContent">
-                            {this.spendableAddresses.map(address => 
-                                <SendForm   key={address.id} 
-                                            addressData={address} 
-                                            accountData={this.curAccountData} 
-                                            onSendTx={this.sendTx} />
-                            )}
-                            </div>
+        if(this.curAccountData === null) return null;
+        if(this.spendableAddresses.length !== 0){
+            return (
+                <div className="row">
+                    <div className="col-5">
+                        <div className="list-group" id="list-tab" role="tablist">
+                        {this.spendableAddresses.map(address =>
+                            <a  key={address.id}
+                                className= {address.unconfirmedTxs.length !== 0 && address.utxs.length === 0 ? "list-group-item list-group-item-action wrap disabled" : "list-group-item list-group-item-action wrap" }
+                                id={"list-" + address.address + "-list" } 
+                                data-toggle="list" 
+                                href={"#list-" + address.address} 
+                                role="tab" 
+                                style={{"textAlign": "center"}} 
+                                aria-controls={address.address}>
+                                    {address.address} <br/> 
+                                    <span className="bold"> {address.balance - address.unconfirmedTxTotalBalance} ₿ (BTC) <i className="fa fa-lock text-success" title={address.utxs.length + ' Confirmed Transactions'} aria-hidden="true"></i> <br/> 
+                                        <span className={address.unconfirmedTxs.length !== 0 ? "" : "hideEle"}>
+                                            {address.unconfirmedTxTotalBalance} ₿ (BTC) <i className="fa fa-unlock text-warning" title={address.unconfirmedTxs.length + ' Unconfirmed Transactions'} aria-hidden="true"></i>
+                                        </span>
+                                    </span>
+                            </a>
+                        )}
                         </div>
                     </div>
-                );
-            }else{
-                return(
-                    <span>
-                    There are currently 0 spendable addresses!
-                    </span>
-                );
-            }
+                    <div className="col-5">
+                        <div className="tab-content" id="nav-tabContent">
+                        {this.spendableAddresses.map(address => 
+                            address.unconfirmedTxs.length !== 0 && address.utxs.length === 0 ? ''
+                            : <SendForm key={address.id} 
+                                        addressData={address} 
+                                        accountData={this.curAccountData} 
+                                        onSendTx={this.sendTx} />
+                        )}
+                        </div>
+                    </div>
+                </div>
+            );
         }else{
             return(
-                <div></div>
-                )
-        }
+                <span>
+                There are currently 0 spendable addresses!
+                </span>
+            );
+            }
     }
 }
 
