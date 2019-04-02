@@ -61,7 +61,7 @@ class EachAccounts extends Component {
                 this.getNewAddress(id, false)
             }else{
                 this.setState({curAccountData: results})
-                this.props.updateAccounts()
+                this.props.updateAccounts();
                 return true;
             }
         }catch (e){
@@ -72,6 +72,7 @@ class EachAccounts extends Component {
     /* creates a new address that is meant to receive coins */
     getNewAddress = async (id, change) => {
         try{
+            this.props.toggleLoading();
             const rawResponse = await fetch('http://localhost:5000/wallet/createAddress', {
             method: 'POST',
             headers: {
@@ -83,6 +84,7 @@ class EachAccounts extends Component {
             });
             if (rawResponse.status !== 200) throw await rawResponse
             const results = await rawResponse.json();
+            this.props.toggleLoading();
 
             this.setState({curAccountData: results})
             this.props.updateAccounts()

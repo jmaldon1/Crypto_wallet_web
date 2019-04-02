@@ -11,7 +11,8 @@ class Accounts extends Component {
           nextAccount: 0,
           getBalanceFromId: null,
           makeContentActiveFromId: null,
-          deviceConnection: null
+          deviceConnection: null,
+          loading: false
         }
     };
 
@@ -34,6 +35,7 @@ class Accounts extends Component {
     handleName = async (name) => {
         /* POST request */
         try{
+            this.toggleLoading(); //toggle a loading screen so the user cannot click anything
             const rawResponse = await fetch('http://localhost:5000/wallet/addAccount', {
             method: 'POST',
             headers: {
@@ -44,6 +46,7 @@ class Accounts extends Component {
             });
             if (rawResponse.status !== 200) throw await rawResponse
             const results = await rawResponse.json();
+            this.toggleLoading();
 
             var newAccountId = this.state.nextAccount
             this.setState({accounts: results.accounts, nextAccount: results.nextAccount, makeContentActiveFromId: newAccountId})
@@ -70,6 +73,7 @@ class Accounts extends Component {
     sendTx = async (address, addressData, amount, fee, id) => {
         /* POST request */
         try{
+            this.toggleLoading();
             const rawResponse = await fetch('http://localhost:5000/wallet/sendTx', {
             method: 'POST',
             headers: {
@@ -84,6 +88,7 @@ class Accounts extends Component {
             });
             if (rawResponse.status !== 200) throw await rawResponse
             const results = await rawResponse.json();
+            this.toggleLoading();
             console.log(results)
             return true;
         }catch (e){
@@ -103,7 +108,27 @@ class Accounts extends Component {
         .then(results => this.setState({accounts: results.accounts, nextAccount: results.nextAccount}));
     };
 
+    toggleLoading = () => {
+        if(this.state.loading){
+            this.setState({
+                loading: false
+            })
+        }else{
+            this.setState({
+                loading: true
+            })
+        }
+    };
+
     render() {
+        var loadingScreen;
+        if(this.state.loading){
+            loadingScreen = <div className="overlay">
+                                <img className="loader" src={require("../../public/loader.gif")} alt="Loading"/>
+                            </div>
+        }else{
+            loadingScreen = null;
+        }
         return (
             <div className="row">
                 <div className="col-sm-2">
@@ -138,7 +163,8 @@ class Accounts extends Component {
                                         onSendTx={this.sendTx} 
                                         updateBalanceFromId={this.state.getBalanceFromId} 
                                         makeContentActiveFromId={this.state.makeContentActiveFromId}
-                                        updateAccounts={this.updateAccounts} />
+                                        updateAccounts={this.updateAccounts} 
+                                        toggleLoading={this.toggleLoading} />
                         )}
                         <div className="tab-pane fade" id="v-pills-addAccount" role="tabpanel" aria-labelledby="v-pills-addAccount-tab">
                             <nav>
@@ -156,6 +182,7 @@ class Accounts extends Component {
                         </div>
                     </div>
                 </div>
+                {loadingScreen}
             </div>
         );
     }

@@ -154,6 +154,8 @@ class SendForm extends Component {
             <div className="tab-pane fade" id={"list-" + this.curAddressData.address} role="tabpanel" aria-labelledby={"list-" + this.curAddressData.address + "-list" }>
                 <span>
                     Balance: {this.curAddressData.balance} ₿ (BTC)
+                    <br />
+                    Address: {this.curAddressData.address}
                 </span>
                 <form onSubmit={(e) => this.handleSubmit(e, this.curAddressData)}>
                     <div className="input-group mb-3">
