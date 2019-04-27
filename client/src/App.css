@@ -66,3 +66,30 @@
   top: 50%;
   left: 50%;
 }
+
+.successIcon{
+  position: absolute;
+  top: 10%;
+  left: 40%;
+  z-index: 9999999;
+  opacity: 0.8;
+
+  -webkit-animation: fadeinout 4s linear forwards;
+  animation: fadeinout 4s linear forwards;
+}
+
+@-webkit-keyframes fadeinout {
+  0%,100% { opacity: 0; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes fadeinout {
+  0%,100% { opacity: 0; }
+  50% { opacity: 0.8; }
+}
+
+#deviceConnection, button:focus{
+  border: none;
+  cursor: pointer;
+  outline: 0;
+}

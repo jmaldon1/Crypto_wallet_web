@@ -11,94 +11,101 @@ const testnet = bitcoin.networks.testnet
 const FPGA = true;
 
 // var accountArray = [];
-var device;
+
+/* Global USB variables */
+var FPGAdevice = usb.findByIds(0x10c4, 0xea60);
+var isDeviceConnected = checkDeviceConnection(FPGAdevice);
 var inEndpoint;
 var outEndpoint;
 
+/* USB listeners */
+checkUSBAttach()
+checkUSBDetach();
+
 var accountArray = [
-    // {
-    //     "addresses": [
-    //         {
-    //             "keypath": "m/44h/1h/0h/0/0",
-    //             "address": "mx97R1ymecapsDH8t7jVNH9henf8vxzuGD",
-    //             "numOfTx": 0,
-    //             "balance": 0,
-    //             "utxs": [],
-    //             "used": false,
-    //             "change": false,
-    //             "unconfirmedTxs": [],
-    //             "unconfirmedTxTotalBalance": 0,
-    //             "id": 0
-    //         },
-    //         {
-    //             "keypath": "m/44h/1h/0h/0/1",
-    //             "address": "2NAZ2GVgh1BQvQQeC5GwoKj4v4bk4K2wqgR",
-    //             "numOfTx": 0,
-    //             "balance" : 0,
-    //             "utxs": [],
-    //             "used": false,
-    //             "change": false,
-    //             "unconfirmedTxs": [],
-    //             unconfirmedTxTotalBalance: 0,
-    //             "id": 1
-    //         },
-    //         {
-    //             "keypath": "m/44h/1h/0h/0/2",
-    //             "address": "moHSnM84HuhTRv1kzhz8LJmzEMV18rBHeR",
-    //             "numOfTx": 0,
-    //             "balance" : 0,
-    //             "utxs": [],
-    //             "used": false,
-    //             "change": false,
-    //             "unconfirmedTxs": [],
-    //             unconfirmedTxTotalBalance: 0,
-    //             "id": 2
-    //         },
-    //         // {
-    //         //     "keypath": "m/44h/1h/0h/1/0",
-    //         //     "address": "mp8hL5KPhy71XU8Q1HfaYtJYJHcBMciFKN",
-    //         //     "numOfTx": 0,
-    //         //     "balance" : 0,
-    //         //     "utxs": [],
-    //         //     "used": false,
-    //         //     "change": true,
-    //         //     "unconfirmedTxs": 0,
-    //         //     "id": 3
-    //         // }
-    //     ],
-    //     "id": 1,
-    //     "name": "Account #1",
-    //     "balance": 0,
-    //     "txs": [],
-    //     "defaultAccount": true,
-    //     "nextAddrIdx": 3,
-    //     "nextChangeIdx": 1,
-    //     "time": null
-    // },
-    // {
-    //     "addresses": [
-    //         {
-    //             "keypath": "m/44h/1h/1h/0/0",
-    //             "address": "mp8hL5KPhy71XU8Q1HfaYtJYJHcBMciFKN",
-    //             "numOfTx": 0,
-    //             "balance" : 0,
-    //             "utxs": [],
-    //             "used": false,
-    //             "change": false,
-    //             "unconfirmedTxs": [],
-    //             "unconfirmedTxTotalBalance": 0,
-    //             "id": 0
-    //         }
-    //     ],
-    //     "id": 2,
-    //     "name": "Account #2",
-    //     "balance": 0,
-    //     "txs": [],
-    //     "defaultAccount": false,
-    //     "nextAddrIdx": 1,
-    //     "nextChangeIdx": 0,
-    //     "time": null
-    // },
+    {
+        "addresses": [
+            {
+                "keypath": "m/44h/1h/0h/0/0",
+                "address": "mx97R1ymecapsDH8t7jVNH9henf8vxzuGD",
+                "numOfTx": 0,
+                "balance": 0,
+                "utxs": [],
+                "used": false,
+                "change": false,
+                "unconfirmedTxs": [],
+                "unconfirmedTxTotalBalance": 0,
+                "id": 0
+            },
+            {
+                "keypath": "m/44h/1h/0h/0/1",
+                "address": "2NAZ2GVgh1BQvQQeC5GwoKj4v4bk4K2wqgR",
+                "numOfTx": 0,
+                "balance" : 0,
+                "utxs": [],
+                "used": false,
+                "change": false,
+                "unconfirmedTxs": [],
+                unconfirmedTxTotalBalance: 0,
+                "id": 1
+            },
+            {
+                "keypath": "m/44h/1h/0h/0/2",
+                "address": "moHSnM84HuhTRv1kzhz8LJmzEMV18rBHeR",
+                "numOfTx": 0,
+                "balance" : 0,
+                "utxs": [],
+                "used": false,
+                "change": false,
+                "unconfirmedTxs": [],
+                unconfirmedTxTotalBalance: 0,
+                "id": 2
+            },
+            // {
+            //     "keypath": "m/44h/1h/0h/1/0",
+            //     "address": "mp8hL5KPhy71XU8Q1HfaYtJYJHcBMciFKN",
+            //     "numOfTx": 0,
+            //     "balance" : 0,
+            //     "utxs": [],
+            //     "used": false,
+            //     "change": true,
+            //     "unconfirmedTxs": 0,
+            //     "id": 3
+            // }
+        ],
+        "id": 1,
+        "name": "Account #1",
+        "balance": 0,
+        "txs": [],
+        "defaultAccount": true,
+        "nextAddrIdx": 3,
+        "nextChangeIdx": 1,
+        "time": null
+    },
+    {
+        "addresses": [
+            {
+                "keypath": "m/44h/1h/1h/0/0",
+                "address": "mp8hL5KPhy71XU8Q1HfaYtJYJHcBMciFKN",
+                "numOfTx": 0,
+                "balance" : 0,
+                "utxs": [],
+                "used": false,
+                "change": false,
+                "unconfirmedTxs": [],
+                "unconfirmedTxTotalBalance": 0,
+                "id": 0
+            }
+        ],
+        "id": 2,
+        "name": "Account #2",
+        "balance": 0,
+        "txs": [],
+        "defaultAccount": false,
+        "nextAddrIdx": 1,
+        "nextChangeIdx": 0,
+        "time": null
+    },
     // {
     //     "addresses": [
     //         {
@@ -115,7 +122,7 @@ var accountArray = [
 
 router.get('/usbConnect', async (req, res) => {
 	try{
-		if(checkDeviceConnection() === false){
+		if(isDeviceConnected === false){
 			return res.json({"deviceConnection": false})
 		}
 		return res.json({"deviceConnection": true})
@@ -175,26 +182,37 @@ router.post("/addAccount", async (req, res) => {
 		*/
 
 		/* if this is the first account being created, the FPGA needs to create a masterkey */
-		if(accountIdx === 1){
-			payload = 'masterkey:' + keyPath;
-			await sendDataToUSB(outEndpoint, payload);
+		// if(accountIdx === 1){
+		// 	var payload = 'masterkey:' + keyPath;
+		// 	await sendDataToUSB(outEndpoint, payload);
 
-			var response = await receiveDataFromUSB(inEndpoint);
+		// 	var response = await receiveDataFromUSB(inEndpoint);
 
-			console.log("received: " + response)
-			// address should be recieved
-			address = response.trim();
-		}else{
-			payload = 'keypath:' + keyPath;
-			/* any other account we will only need to retrieve the address that the FPGA creates */
-			await sendDataToUSB(outEndpoint, payload);
+		// 	console.log("received: " + response)
+		// 	// address should be recieved
+		// 	var address = response.trim();
+		// }else{
+		// 	var payload = 'keypath:' + keyPath;
+		// 	/* any other account we will only need to retrieve the address that the FPGA creates */
+		// 	await sendDataToUSB(outEndpoint, payload);
 
-			var response = await receiveDataFromUSB(inEndpoint);
+		// 	var response = await receiveDataFromUSB(inEndpoint);
 
-			console.log("received: " + response)
-			// address should be recieved
-			address = response.trim();
-		}
+		// 	console.log("received: " + response)
+		// 	// address should be recieved
+		// 	var address = response.trim();
+		// }
+
+		var payload = 'keypath:' + keyPath;
+		// var payload = "sign:0200000001e0d24d3d814b74981ec7279538bccf2f382cba1e2c02b97f463738ecffb0ecf90000000000ffffffff0128230000000000001976a914afc0c23e6fc5341d70656c17a532c229b1dbac7f88ac00000000:76a914d19f78e626237078a09c1e1eafbf3b97561cc56788ac:mzdLZURNgmdkiE8dvntshSLnKwd5F5vT1S:1"
+		/* any other account we will only need to retrieve the address that the FPGA creates */
+		await sendDataToUSB(outEndpoint, payload);
+
+		var response = await receiveDataFromUSB(inEndpoint);
+
+		console.log("received: " + response)
+		// address should be recieved
+		var address = response.trim();
 
 		// const keyPair = bitcoin.ECPair.makeRandom({ network: testnet })
 		// const { address } = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey, network: testnet })
@@ -576,6 +594,10 @@ router.post('/checkBalance', async (req, res) => {
 
 router.post('/sendTx', txValidation,  async (req, res) => {
 	try{
+		var accountData = accountArray.filter(function(account) {
+		    return account.id === req.body.id;
+		})[0];
+
 		let tx = new bitcoin.TransactionBuilder(testnet)
 
 		var amountWeHave = req.body.addressData.balance*100000000 // convert to satoshi
@@ -604,22 +626,34 @@ router.post('/sendTx', txValidation,  async (req, res) => {
 
 		/* if amountToKeep is greater than 0, create a change address */
 		if(amountToKeep > 0){
-			/* create change address */
-			var accountData = await createAddress(req.body.idx, true)
-			console.log('change address created');
-			/* get a list of all unused change addresses */
-			var unusedChangeAddresses = accountData.addresses.filter(account => account.used === false && account.change === true)
-			/* find the first change address and  */
-			tx.addOutput(unusedChangeAddresses[0].address, amountToKeep)
+			/* For demonstration purposes, send excess funds for these addresses back to themselves */
+			if(req.body.addressData.address === "mx97R1ymecapsDH8t7jVNH9henf8vxzuGD" || req.body.addressData.address === "mp8hL5KPhy71XU8Q1HfaYtJYJHcBMciFKN"){
+				tx.addOutput(req.body.addressData.address, amountToKeep);
+			}else{
+				/* Check if there are any unused change addresses available */
+				var unusedChangeAddresses = accountData.addresses.filter(account => account.used === false && account.change === true)
+				if(unusedChangeAddresses.length === 0){
+					/* create change address */
+					accountData = await createAddress(req.body.id, true)
+					console.log('change address created');
+					/* get a list of all unused change addresses */
+					unusedChangeAddresses = accountData.addresses.filter(account => account.used === false && account.change === true)
+					/* find the first change address and  */
+					tx.addOutput(unusedChangeAddresses[0].address, amountToKeep)
+				}else{
+					tx.addOutput(unusedChangeAddresses[0].address, amountToKeep)
+				}
+			}
 		}
 
 		if(FPGA){
-			// Create incomplete TXHEX to be signed by FPGA
+			/* Create incomplete TXHEX to be signed by FPGA */
 			var txHex = tx.buildIncomplete().toHex()
 			var script = bitcoin.address.toOutputScript(req.body.addressData.address, testnet).toString('hex')
 			var pubAddr = req.body.addressData.address;
 
 			var payload = 'sign:' + txHex + ':' + script + ':' + pubAddr + ':' + inputCount;
+			// console.log(payload);
 			// Send payload to FPGA
 			await sendDataToUSB(outEndpoint, payload);
 
@@ -627,15 +661,17 @@ router.post('/sendTx', txValidation,  async (req, res) => {
 			var response = await receiveDataFromUSB(inEndpoint);
 
 			console.log("received: " + response.trim())
-			signedTxHex = response.trim();
+			var signedTxHex = response.trim();
 
 			// broadcast transaction
-			broadcastTx(signedTxHex);
+			var wasTxBroadcasted = await broadcastTx(signedTxHex);
+			return res.json(wasTxBroadcasted)
+			// return res.json(true);
 		}else{
 
 		}
 
-		return res.json('done')
+		// return res.json('done')
 
 	}catch(e){
 		console.log(e)
@@ -696,19 +732,18 @@ async function createAddress(id, change){
 			tempAddressDict['keypath'] = keyPath
 
 			/* TALK TO FPGA and get Address for this keypath */
-			console.log("sent to FPGA");
-			payload = 'keypath:' + keyPath;
-			/* any other account we will only need to retrieve the address that the FPGA creates */
-			await sendDataToUSB(outEndpoint, payload);
+			// var payload = 'keypath:' + keyPath;
+			// /* any other account we will only need to retrieve the address that the FPGA creates */
+			// await sendDataToUSB(outEndpoint, payload);
 
-			var response = await receiveDataFromUSB(inEndpoint);
+			// var response = await receiveDataFromUSB(inEndpoint);
 
-			console.log("received: " + response)
-			// address should be recieved
-			address = response.trim();
+			// console.log("received: " + response)
+			// // address should be recieved
+			// var address = response.trim();
 
-			// const keyPair = bitcoin.ECPair.makeRandom({ network: testnet })
-			// const { address } = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey, network: testnet })
+			const keyPair = bitcoin.ECPair.makeRandom({ network: testnet })
+			const { address } = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey, network: testnet })
 
 			tempAddressDict['address'] = address;
 			tempAddressDict['balance'] = 0;
@@ -759,39 +794,63 @@ function sortTxs(unsortedTxs) {
     })
 }
 
-function checkDeviceConnection(){
+function checkUSBAttach(){
+	usb.on('attach', function(device) {
+		/* check if FPGA device was connected */
+		FPGAdevice = usb.findByIds(0x10c4, 0xea60);
+		isDeviceConnected = checkDeviceConnection(device);
+	});
+}
+
+function checkUSBDetach(){
+	usb.on('detach', function(device) {
+		/* Check that the device that disconnected was the FPGA device */
+		if(FPGAdevice && (device.deviceAddress === FPGAdevice.deviceAddress)){
+			/* safely close USB device */
+			FPGAdevice.close();
+			isDeviceConnected = false;
+		}	
+	})
+}
+
+function checkDeviceConnection(device){
+	/* FPGA vid and pid */
 	//VENDOR ID: 0x10c4
 	//PRODUCT ID: 0xea60
+	if(!device) return false;
 
-	if(usb.findByIds(0x10c4, 0xea60) === undefined){
-		return false
-	}
-	if(device === undefined){
-		device = usb.findByIds(0x10c4, 0xea60)
-		// console.log(usb.findByIds(0x10c4, 0xea60))
-
-		/* connect to device */
-		device.open();
-		var devInterface = device.interfaces[0];
+	/* Check if the device connected is the FPGA device */
+	if(FPGAdevice && (device.deviceAddress === FPGAdevice.deviceAddress)){
+		FPGAdevice.open((err)=>{
+			console.log(err);
+		});
+		/* There must be an interface to interact with the device,
+		   So if there are no interfaces we return false */
+		if(FPGAdevice.interfaces.length === 0){
+			console.log("no interfaces found, retry")
+			return false;
+		}
+		var devInterface = FPGAdevice.interfaces[0];
 		devInterface.claim();
 
-		var endpoints = device.interfaces[0].endpoints;
+		var endpoints = FPGAdevice.interfaces[0].endpoints;
 		inEndpoint = endpoints[0];
 		outEndpoint = endpoints[1];
+		return true;
 	}
-	return true
+	return false;
 }
 
 function sleep(ms) {
 	return new Promise(resolve => {
-		setTimeout(resolve, ms)
+		setTimeout(resolve, ms);
 	})
 }
 
 async function sendDataToUSB(outEndpoint, payload){
 	var chunks = payload.match(/.{1,1000}/g);
 	for(var i = 0; i < chunks.length; i++){
-		// console.log(chunks[i]);
+		console.log(chunks[i]);
 		await sendUSB(outEndpoint, chunks[i]);
 		if(chunks.length > 1) await sleep(500);
 	}
@@ -865,8 +924,10 @@ async function broadcastTx(txHex){
 		var response = await request(options)
 		// response = JSON.parse(response)
 		console.log(response)
+		return true;
 	}catch(e){
 		console.log(e)
+		return false;
 	}
 }
 
