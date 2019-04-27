@@ -49,7 +49,7 @@ nodemon npm start
 In another terminal window open the front end:
 
 ```
-npm start
+cd client && npm start
 ```
 
 ## Built With
