@@ -156,7 +156,7 @@ class Accounts extends Component {
             const results = await rawResponse.json();
             this.toggleLoading();
             // console.log(results)
-            if(results === true){
+            if("success" in results){
                 toast.success("Transaction Sent! ✓ ", {
                     position: "top-right",
                     autoClose: 4000,
@@ -170,7 +170,14 @@ class Accounts extends Component {
                 // this.setState({successfullTx: false});
                 // return true;
             }else{
-                return false;
+                toast.error("There was an error sending the transaction, Try again! ", {
+                    position: "top-right",
+                    autoClose: 4000,
+                    hideProgressBar: true,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true
+                });
             }
         }catch (e){
             console.log(e)

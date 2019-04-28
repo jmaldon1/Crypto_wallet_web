@@ -9,6 +9,7 @@ This Web Wallet allows for:
 * Send/Receive Payments
 * Transaction History
 
+<img src="https://github.com/jmaldon1/Crypto_wallet_web/blob/master/readme_images/frontend_ui.png" alt="frontend ui" width="400"/>
 
 ## Getting Started
 

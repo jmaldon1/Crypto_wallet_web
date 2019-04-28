@@ -556,7 +556,7 @@ router.post('/checkBalance', async (req, res) => {
 
 						/* if there is an unconfirmed transaction (anything less than 3 confirmations),
 							we will remove that UTXO from the list and add 1 to the unconfirmedTX counter  */
-						if(utxoFromDb.confirmations < 3){
+						if(utxoFromDb.confirmations < 0){
 							var indexOfUnconfirmedTx = addrData.utxs.findIndex(x => x.txIndex === utxoFromDb.txIndex)
 							/* just a check to make sure the index was found */
 							if (indexOfUnconfirmedTx !== -1) {
@@ -664,8 +664,8 @@ router.post('/sendTx', txValidation,  async (req, res) => {
 			var signedTxHex = response.trim();
 
 			// broadcast transaction
-			var wasTxBroadcasted = await broadcastTx(signedTxHex);
-			return res.json(wasTxBroadcasted)
+			var txBroadcastResponse = await broadcastTx(signedTxHex);
+			return res.json(txBroadcastResponse)
 			// return res.json(true);
 		}else{
 
@@ -731,19 +731,28 @@ async function createAddress(id, change){
 			}
 			tempAddressDict['keypath'] = keyPath
 
-			/* TALK TO FPGA and get Address for this keypath */
-			// var payload = 'keypath:' + keyPath;
-			// /* any other account we will only need to retrieve the address that the FPGA creates */
-			// await sendDataToUSB(outEndpoint, payload);
+			var testAccount = accountData.addresses.filter(function(addresses) {
+			    return (addresses.address === "mx97R1ymecapsDH8t7jVNH9henf8vxzuGD" || addresses.address === "mp8hL5KPhy71XU8Q1HfaYtJYJHcBMciFKN");
+			})[0];
 
-			// var response = await receiveDataFromUSB(inEndpoint);
+			var address;
+			/* if a test account needs another address, don't create it from the FPGA */
+			if(testAccount){
+				const keyPair = bitcoin.ECPair.makeRandom({ network: testnet })
+				var keyPairData = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey, network: testnet })
+				address = keyPairData.address
+			}else{
+				/* TALK TO FPGA and get Address for this keypath */
+				var payload = 'keypath:' + keyPath;
+				/* any other account we will only need to retrieve the address that the FPGA creates */
+				await sendDataToUSB(outEndpoint, payload);
 
-			// console.log("received: " + response)
-			// // address should be recieved
-			// var address = response.trim();
+				var response = await receiveDataFromUSB(inEndpoint);
 
-			const keyPair = bitcoin.ECPair.makeRandom({ network: testnet })
-			const { address } = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey, network: testnet })
+				console.log("received: " + response)
+				// address should be recieved
+				address = response.trim();
+			}
 
 			tempAddressDict['address'] = address;
 			tempAddressDict['balance'] = 0;
@@ -804,7 +813,7 @@ function checkUSBAttach(){
 
 function checkUSBDetach(){
 	usb.on('detach', function(device) {
-		/* Check that the device that disconnected was the FPGA device */
+		/* Check if the device that disconnected was the FPGA device */
 		if(FPGAdevice && (device.deviceAddress === FPGAdevice.deviceAddress)){
 			/* safely close USB device */
 			FPGAdevice.close();
@@ -888,6 +897,9 @@ async function receiveDataFromUSB(inEndpoint){
 	return response;
 }
 
+/* FOR SMARTBIT (NOT CURRENTLY USING) 
+   This function will get the result of every transaction,
+   for example: how much money enters or leaves the wallet */
 function getTxResult(tx, addresses){
 	var result = 0;
 	tx.outputs.forEach(output => {
@@ -924,10 +936,10 @@ async function broadcastTx(txHex){
 		var response = await request(options)
 		// response = JSON.parse(response)
 		console.log(response)
-		return true;
+		return {"success": response};
 	}catch(e){
 		console.log(e)
-		return false;
+		return {"error": "Unexpected Error, check console"};
 	}
 }
 
